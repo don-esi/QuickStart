@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 
-namespace QuickStartMenu.Services;
+namespace QuickStart.Services;
 
 public static class LaunchService
 {

@@ -3,10 +3,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using QuickStartMenu.Models;
-using QuickStartMenu.Services;
+using QuickStart.Models;
+using QuickStart.Services;
 
-namespace QuickStartMenu.Views;
+namespace QuickStart.Views;
 
 public partial class ManageWindow : Window
 {
@@ -271,7 +271,7 @@ public partial class ManageWindow : Window
     {
         TrayIconPromoter.TryPromote(baseline: null);
         TrayVisibilityGuidance.OpenTaskbarSettings();
-        StatusText.Text = "Opened Taskbar settings — enable Quick Start Menu under Other system tray icons.";
+        StatusText.Text = "Opened Taskbar settings — enable QuickStart under Other system tray icons.";
         MessageBox.Show(
             this,
             TrayVisibilityGuidance.ManualSteps,

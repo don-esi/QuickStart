@@ -1,19 +1,19 @@
-# Quick Start Menu
+# QuickStart
 
 Minimalist Windows start-menu alternative (PSMenu-like) built with **WPF** for **Visual Studio 2026**.
 
-Repository: https://github.com/don-esi/QuickStartMenu
+Repository: https://github.com/don-esi/QuickStart
 
 > Built with [Cursor](https://cursor.com) / Grok.
 
 | | |
 |---|---|
-| Solution | `QuickStartMenu.sln` (VS Version 18) |
+| Solution | `QuickStart.sln` (VS Version 18) |
 | TFM | `net10.0-windows` |
 | SDK on machine | .NET 10 (`10.0.403`) |
 | Language | C# (`LangVersion=latest`; C# 13+ with .NET 10) |
 | App / tray icon | `Resources\app.ico` (multi-size 16–256; Win11 Start–style 2×2 grid) |
-| Release | [v1.0.0](https://github.com/don-esi/QuickStartMenu/releases/tag/v1.0.0) (`QuickStartMenu-Setup-1.0.0.exe`) |
+| Release | [v1.1.0](https://github.com/don-esi/QuickStart/releases/tag/v1.1.0) (`QuickStart-Setup-1.1.0.exe`) |
 
 ## Features
 
@@ -27,28 +27,28 @@ Repository: https://github.com/don-esi/QuickStartMenu
 
 ## Open in Visual Studio 2026
 
-1. Open `D:\Source\QuickStartMenu\QuickStartMenu.sln` in **Visual Studio Community 2026**
-2. Set **QuickStartMenu** as the startup project (if needed)
+1. Open `D:\Source\QuickStart\QuickStart.sln` in **Visual Studio Community 2026**
+2. Set **QuickStart** as the startup project (if needed)
 3. Press **F5**
 
 ## Run from CLI
 
 ```powershell
-cd D:\Source\QuickStartMenu
-dotnet build QuickStartMenu.sln -c Release
-dotnet run --project QuickStartMenu.csproj -c Release
+cd D:\Source\QuickStart
+dotnet build QuickStart.sln -c Release
+dotnet run --project QuickStart.csproj -c Release
 ```
 
 Or launch the built exe:
 
 ```powershell
-.\bin\Release\net10.0-windows\QuickStartMenu.exe
+.\bin\Release\net10.0-windows\QuickStart.exe
 ```
 
 ## Config / debug log
 
-- Menu: `%AppData%\QuickStartMenu\menu.json`
-- Debug log: `%AppData%\QuickStartMenu\debug.log` (rolls at ~2 MB → `.1` / `.2`; Release = exceptions only)
+- Menu: `%AppData%\QuickStart\menu.json`
+- Debug log: `%AppData%\QuickStart\debug.log` (rolls at ~2 MB → `.1` / `.2`; Release = exceptions only)
 
 Left-click the tray icon to open the flyout; right-click for Manage / Exit.
 
@@ -56,9 +56,9 @@ Left-click the tray icon to open the flyout; right-click for Manage / Exit.
 
 Microsoft does **not** provide a supported API to force a notification icon into the always-visible tray. New icons go to the overflow (`^`) by default.
 
-On **Windows 11**, Quick Start Menu best-effort sets the undocumented `IsPromoted=1` value under `HKCU\Control Panel\NotifyIconSettings` when Explorer creates our entry (and never overrides an explicit user hide). We do **not** show our own first-run pin balloon/dialog — Windows already prompts.
+On **Windows 11**, QuickStart best-effort sets the undocumented `IsPromoted=1` value under `HKCU\Control Panel\NotifyIconSettings` when Explorer creates our entry (and never overrides an explicit user hide). We do **not** show our own first-run pin balloon/dialog — Windows already prompts.
 
-**Manual (any Windows 10/11):** Settings → Personalization → Taskbar → **Other system tray icons** → enable Quick Start Menu.  
+**Manual (any Windows 10/11):** Settings → Personalization → Taskbar → **Other system tray icons** → enable QuickStart.  
 Tray menu / Manage → **Keep icon visible…** / **Tray icon settings…** opens the same Settings page.
 
 ## Installer (Inno Setup)
@@ -69,33 +69,33 @@ Self-contained **win-x64** single-file publish + Inno Setup 6 setup exe. No sepa
 
 ### From Visual Studio 2026
 
-1. Open `QuickStartMenu.sln`
+1. Open `QuickStart.sln`
 2. Set solution configuration to **Release**
 3. **Build → Build Solution** (Ctrl+Shift+B)
 
-That builds `QuickStartMenu` then `installer\QuickStartMenu.Installer` (Release-only), which runs `scripts\build-installer.ps1`.  
+That builds `QuickStart` then `installer\QuickStart.Installer` (Release-only), which runs `scripts\build-installer.ps1`.  
 **Debug / F5** does **not** build the installer (kept snappy).
 
-**Output:** `artifacts\installer\QuickStartMenu-Setup-<version>.exe`
+**Output:** `artifacts\installer\QuickStart-Setup-<version>.exe`
 
 ### From CLI
 
 ```powershell
-cd D:\Source\QuickStartMenu
-dotnet build QuickStartMenu.sln -c Release
+cd D:\Source\QuickStart
+dotnet build QuickStart.sln -c Release
 # or directly:
 .\scripts\build-installer.ps1
 ```
 
-Script / ISS / MSBuild: `scripts\build-installer.ps1`, `installer\QuickStartMenu.iss`, `installer\QuickStartMenu.Installer.proj`
+Script / ISS / MSBuild: `scripts\build-installer.ps1`, `installer\QuickStart.iss`, `installer\QuickStart.Installer.proj`
 
 ## Smoke test
 
 ```powershell
-dotnet run --project QuickStartMenu.csproj -c Release -- --smoke-flyout
+dotnet run --project QuickStart.csproj -c Release -- --smoke-flyout
 ```
 
-Expect exit code `0` and `Smoke: ... result=PASS` / `onScreen=True` in `%AppData%\QuickStartMenu\debug.log`.
+Expect exit code `0` and `Smoke: ... result=PASS` / `onScreen=True` in `%AppData%\QuickStart\debug.log`.
 Startup stamp should be `build=2026-11-09-dpi-fix`.
 
 ## Pinned-apps note
@@ -105,3 +105,7 @@ Import reads `.lnk` files under:
 `%AppData%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar`
 
 That covers classic taskbar pins. Some Win11 pin metadata is not exposed via a stable public API; those may not appear until Microsoft documents a supported surface.
+
+## Rename note (v1.1.0)
+
+Formerly **QuickStartMenu**. AppData migrates from `%AppData%\QuickStartMenu` to `%AppData%\QuickStart` on first run. Uninstall the old *QuickStartMenu* setup and refresh any pinned shortcuts if both are installed.

@@ -4,10 +4,10 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
-using QuickStartMenu.Models;
-using QuickStartMenu.Services;
+using QuickStart.Models;
+using QuickStart.Services;
 
-namespace QuickStartMenu.Views;
+namespace QuickStart.Views;
 
 public partial class FlyoutWindow : Window
 {
@@ -351,7 +351,7 @@ public partial class FlyoutWindow : Window
             MessageBox.Show(
                 this,
                 $"Could not launch:\n{item.Path}\n\n{ex.Message}",
-                "Quick Start Menu",
+                "QuickStart",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }

@@ -1,7 +1,7 @@
 using System.IO;
 using Microsoft.Win32;
 
-namespace QuickStartMenu.Services;
+namespace QuickStart.Services;
 
 /// <summary>
 /// Best-effort tray visibility on Windows 11.

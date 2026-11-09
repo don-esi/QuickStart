@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Publishes QuickStartMenu (self-contained win-x64 single-file) and builds the Inno Setup installer.
+  Publishes QuickStart (self-contained win-x64 single-file) and builds the Inno Setup installer.
 
 .EXAMPLE
   .\scripts\build-installer.ps1
@@ -20,7 +20,7 @@ $ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
 Set-Location $root
 
-$csproj = Join-Path $root 'QuickStartMenu.csproj'
+$csproj = Join-Path $root 'QuickStart.csproj'
 if (-not $Version) {
     [xml] $proj = Get-Content $csproj
     $Version = $proj.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
@@ -29,9 +29,9 @@ if (-not $Version) {
 
 $publishDir = Join-Path $root 'artifacts\publish\win-x64'
 $installerDir = Join-Path $root 'artifacts\installer'
-$iss = Join-Path $root 'installer\QuickStartMenu.iss'
+$iss = Join-Path $root 'installer\QuickStart.iss'
 
-Write-Host "=== Quick Start Menu installer ===" -ForegroundColor Cyan
+Write-Host "=== QuickStart installer ===" -ForegroundColor Cyan
 Write-Host "Version:       $Version"
 Write-Host "Configuration: $Configuration"
 Write-Host "Publish dir:   $publishDir"
@@ -50,7 +50,7 @@ dotnet publish $csproj `
     -o $publishDir
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)" }
 
-$exe = Join-Path $publishDir 'QuickStartMenu.exe'
+$exe = Join-Path $publishDir 'QuickStart.exe'
 if (-not (Test-Path $exe)) { throw "Published exe missing: $exe" }
 Write-Host "Published: $exe ($([math]::Round((Get-Item $exe).Length / 1MB, 1)) MB)"
 
@@ -75,7 +75,7 @@ Write-Host "ISCC: $InnoCompiler"
     $iss
 if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)" }
 
-$setup = Get-ChildItem $installerDir -Filter "QuickStartMenu-Setup-*.exe" |
+$setup = Get-ChildItem $installerDir -Filter "QuickStart-Setup-*.exe" |
     Sort-Object LastWriteTime -Descending |
     Select-Object -First 1
 

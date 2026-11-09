@@ -1,4 +1,4 @@
-namespace QuickStartMenu.Models;
+namespace QuickStart.Models;
 
 public sealed class MenuConfig
 {

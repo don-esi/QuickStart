@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 
-namespace QuickStartMenu.Services;
+namespace QuickStart.Services;
 
 /// <summary>
 /// WinForms / Win32 screen coords are physical pixels; WPF Left/Top are DIPs.

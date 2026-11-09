@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace QuickStartMenu.Services;
+namespace QuickStart.Services;
 
 /// <summary>
 /// First-run / help UX when Windows hides the icon in the notification overflow.
@@ -11,10 +11,10 @@ public static class TrayVisibilityGuidance
 
     public static string ManualSteps { get; } =
         "Windows hides new tray icons in the overflow (^) by default.\n\n" +
-        "To keep Quick Start Menu always visible:\n" +
+        "To keep QuickStart always visible:\n" +
         "1. Open Settings → Personalization → Taskbar\n" +
         "2. Open “Other system tray icons” (or “Select which icons appear on the taskbar”)\n" +
-        "3. Turn on Quick Start Menu / QuickStartMenu.exe\n\n" +
+        "3. Turn on QuickStart / QuickStart.exe\n\n" +
         "On Windows 11 we also try to promote the icon automatically when Windows allows it.";
 
     public static void OpenTaskbarSettings()

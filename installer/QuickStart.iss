@@ -1,10 +1,10 @@
-; Inno Setup 6 — Quick Start Menu
+; Inno Setup 6 — QuickStart
 ; Built by scripts\build-installer.ps1 after a self-contained publish.
 ; Does NOT register "Start with Windows" — that stays an in-app HKCU Run toggle.
 ; Uninstall removes the app's optional Run key so leftovers don't relaunch a missing exe.
 
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.1.0"
 #endif
 
 #ifndef PublishDir
@@ -15,10 +15,10 @@
   #define OutputDir "..\artifacts\installer"
 #endif
 
-#define MyAppName "Quick Start Menu"
-#define MyAppExe "QuickStartMenu.exe"
+#define MyAppName "QuickStart"
+#define MyAppExe "QuickStart.exe"
 #define MyAppPublisher "don-esi"
-#define MyAppURL "https://github.com/don-esi/QuickStartMenu"
+#define MyAppURL "https://github.com/don-esi/QuickStart"
 
 [Setup]
 ; Doubled braces → literal {GUID} AppId for stable upgrades/uninstall.
@@ -30,11 +30,11 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\QuickStartMenu
+DefaultDirName={autopf}\QuickStart
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir={#OutputDir}
-OutputBaseFilename=QuickStartMenu-Setup-{#AppVersion}
+OutputBaseFilename=QuickStart-Setup-{#AppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -68,12 +68,12 @@ Filename: "{app}\{#MyAppExe}"; Description: "Launch {#MyAppName}"; Flags: nowait
 
 [UninstallDelete]
 ; Remove per-user config/log optionally? Keep data by default — only wipe Run key.
-Type: files; Name: "{userappdata}\QuickStartMenu\debug.log"
+Type: files; Name: "{userappdata}\QuickStart\debug.log"
 
 [Code]
 const
   RunKey = 'Software\Microsoft\Windows\CurrentVersion\Run';
-  RunValue = 'QuickStartMenu';
+  RunValue = 'QuickStart';
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
@@ -81,5 +81,6 @@ begin
   begin
     // Clean the in-app "Start with Windows" registration if present (HKCU only).
     RegDeleteValue(HKCU, RunKey, RunValue);
+    RegDeleteValue(HKCU, RunKey, 'QuickStartMenu'); // legacy name
   end;
 end;

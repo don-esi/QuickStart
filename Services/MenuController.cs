@@ -1,6 +1,6 @@
-using QuickStartMenu.Models;
+using QuickStart.Models;
 
-namespace QuickStartMenu.Services;
+namespace QuickStart.Services;
 
 public sealed class MenuController
 {

@@ -2,9 +2,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
-using QuickStartMenu.Models;
+using QuickStart.Models;
 
-namespace QuickStartMenu.Services;
+namespace QuickStart.Services;
 
 /// <summary>
 /// Imports shortcuts from the classic taskbar "User Pinned\TaskBar" folder.

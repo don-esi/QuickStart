@@ -1,7 +1,7 @@
-<Window x:Class="QuickStartMenu.Views.ManageWindow"
+<Window x:Class="QuickStart.Views.ManageWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Manage Quick Start Menu"
+        Title="Manage QuickStart"
         Height="560"
         Width="760"
         MinHeight="420"
@@ -29,7 +29,7 @@
                           Unchecked="StartupCheck_Changed"/>
                 <Button Content="Tray icon settings…"
                         Style="{StaticResource FlatButton}"
-                        ToolTip="Windows may hide tray icons in the overflow. Open Taskbar settings to show Quick Start Menu."
+                        ToolTip="Windows may hide tray icons in the overflow. Open Taskbar settings to show QuickStart."
                         Margin="0,0,8,0"
                         Click="TraySettings_Click"/>
                 <Button Content="Import pinned apps"

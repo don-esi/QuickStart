@@ -2,10 +2,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace QuickStartMenu.Services;
+namespace QuickStart.Services;
 
 /// <summary>
-/// Durable log at %AppData%\QuickStartMenu\debug.log (also Debug.WriteLine).
+/// Durable log at %AppData%\QuickStart\debug.log (also Debug.WriteLine).
 /// Debug: verbose Info/Warn/Error. Release: exceptions with stack traces only.
 /// Size-rotated: rolls to debug.log.1 / .2 when over ~2 MB.
 /// </summary>
@@ -17,7 +17,7 @@ public static class AppLog
     private static readonly object Gate = new();
     private static readonly string LogPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "QuickStartMenu",
+        "QuickStart",
         "debug.log");
 
     public static string LogFilePath => LogPath;

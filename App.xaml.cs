@@ -1,11 +1,11 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Threading;
-using QuickStartMenu.Services;
-using QuickStartMenu.Views;
+using QuickStart.Services;
+using QuickStart.Views;
 using Drawing = System.Drawing;
 using Forms = System.Windows.Forms;
 
-namespace QuickStartMenu;
+namespace QuickStart;
 
 public partial class App : System.Windows.Application
 {
@@ -47,6 +47,7 @@ public partial class App : System.Windows.Application
         {
             var store = new ConfigStore();
             AppLog.Info($"Config path={store.ConfigPath}");
+            StartupService.MigrateLegacyRunValue();
             _controller = new MenuController(store);
             AppLog.Info(
                 $"Config loaded: folders={_controller.Config.Folders.Count}, " +
@@ -64,7 +65,7 @@ public partial class App : System.Windows.Application
             _tray = new Forms.NotifyIcon
             {
                 Icon = _trayIcon,
-                Text = "Quick Start Menu — left-click to open",
+                Text = "QuickStart — left-click to open",
                 Visible = true
             };
 
@@ -86,8 +87,8 @@ public partial class App : System.Windows.Application
         {
             AppLog.Error("Startup failed", ex);
             Forms.MessageBox.Show(
-                $"Quick Start Menu failed to start.\n\n{ex.Message}\n\nSee log:\n{AppLog.LogFilePath}",
-                "Quick Start Menu",
+                $"QuickStart failed to start.\n\n{ex.Message}\n\nSee log:\n{AppLog.LogFilePath}",
+                "QuickStart",
                 Forms.MessageBoxButtons.OK,
                 Forms.MessageBoxIcon.Error);
             Shutdown(-1);

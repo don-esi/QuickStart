@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -7,13 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <RootNamespace>QuickStartMenu</RootNamespace>
-    <AssemblyName>QuickStartMenu</AssemblyName>
-    <Product>Quick Start Menu</Product>
+    <RootNamespace>QuickStart</RootNamespace>
+    <AssemblyName>QuickStart</AssemblyName>
+    <Product>QuickStart</Product>
     <Description>Minimalist Windows start-menu alternative</Description>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Resources\app.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
