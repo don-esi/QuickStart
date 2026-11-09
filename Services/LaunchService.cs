@@ -37,6 +37,7 @@ public static class LaunchService
                 break;
         }
 
+        AppLog.Info($"LaunchService Start file={psi.FileName} args={psi.Arguments} cwd={psi.WorkingDirectory}");
         Process.Start(psi);
     }
 

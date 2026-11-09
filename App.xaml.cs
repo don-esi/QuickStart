@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Threading;
 using QuickStartMenu.Services;
 using QuickStartMenu.Views;
 using Drawing = System.Drawing;
@@ -18,48 +19,154 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
-        var store = new ConfigStore();
-        _controller = new MenuController(store);
-
-        _trayIcon = IconService.CreateTrayIcon();
-        _tray = new Forms.NotifyIcon
+        // Note: Environment.FailFast (e.g. WPF Window.Measure ∞) bypasses these handlers.
+        DispatcherUnhandledException += (_, args) =>
         {
-            Icon = _trayIcon,
-            Text = "Quick Start Menu",
-            Visible = true
+            AppLog.Error("DispatcherUnhandledException", args.Exception);
+            args.Handled = true;
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            AppLog.Error(
+                $"UnhandledException IsTerminating={args.IsTerminating}",
+                args.ExceptionObject as Exception);
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            AppLog.Error("UnobservedTaskException", args.Exception);
+            args.SetObserved();
         };
 
-        _tray.MouseUp += TrayOnMouseUp;
-        _tray.ContextMenuStrip = BuildTrayMenu();
+        AppLog.Info($"Startup begin. build=2026-11-09-flyout-fix Log={AppLog.LogFilePath}");
+        AppLog.Info($"ProcessPath={Environment.ProcessPath}; BaseDir={AppContext.BaseDirectory}");
+        AppLog.Info($"Args=[{string.Join(' ', e.Args)}]");
 
-        // Keep a hidden reference so WPF stays alive without a main window.
-        _flyout = new FlyoutWindow(_controller);
+        try
+        {
+            var store = new ConfigStore();
+            AppLog.Info($"Config path={store.ConfigPath}");
+            _controller = new MenuController(store);
+            AppLog.Info(
+                $"Config loaded: folders={_controller.Config.Folders.Count}, " +
+                $"rootItems={_controller.Config.RootItems.Count}, " +
+                $"startWithWindows={_controller.Config.StartWithWindows}");
+
+            _trayIcon = IconService.CreateTrayIcon();
+            _tray = new Forms.NotifyIcon
+            {
+                Icon = _trayIcon,
+                Text = "Quick Start Menu",
+                Visible = true
+            };
+
+            // MouseClick (not MouseUp) for a clean single left-click; marshal to WPF dispatcher.
+            _tray.MouseClick += TrayOnMouseClick;
+            _tray.ContextMenuStrip = BuildTrayMenu();
+            AppLog.Info("Tray icon created (MouseClick + ContextMenuStrip).");
+
+            _flyout = new FlyoutWindow(_controller);
+            AppLog.Info("FlyoutWindow constructed (hidden).");
+
+            if (e.Args.Any(a => string.Equals(a, "--smoke-flyout", StringComparison.OrdinalIgnoreCase)))
+                ScheduleSmokeFlyout();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Startup failed", ex);
+            Forms.MessageBox.Show(
+                $"Quick Start Menu failed to start.\n\n{ex.Message}\n\nSee log:\n{AppLog.LogFilePath}",
+                "Quick Start Menu",
+                Forms.MessageBoxButtons.OK,
+                Forms.MessageBoxIcon.Error);
+            Shutdown(-1);
+        }
+    }
+
+    private void ScheduleSmokeFlyout()
+    {
+        AppLog.Info("Smoke: scheduling flyout open");
+        var open = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+        open.Tick += (_, _) =>
+        {
+            open.Stop();
+            ShowFlyout();
+            AppLog.Info($"Smoke: after ShowFlyout IsVisible={_flyout?.IsVisible} IsActive={_flyout?.IsActive}");
+
+            var check = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+            check.Tick += (_, _) =>
+            {
+                check.Stop();
+                var ok = _flyout is { IsVisible: true };
+                AppLog.Info($"Smoke: after guard IsVisible={_flyout?.IsVisible} result={(ok ? "PASS" : "FAIL")}");
+                Shutdown(ok ? 0 : 2);
+            };
+            check.Start();
+        };
+        open.Start();
     }
 
     private Forms.ContextMenuStrip BuildTrayMenu()
     {
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("Open menu", null, (_, _) => ShowFlyout());
-        menu.Items.Add("Manage…", null, (_, _) => ShowManage());
+        menu.Items.Add("Open menu", null, (_, _) =>
+        {
+            AppLog.Info("Tray context: Open menu");
+            Dispatcher.BeginInvoke(ShowFlyout, DispatcherPriority.Normal);
+        });
+        menu.Items.Add("Manage…", null, (_, _) =>
+        {
+            AppLog.Info("Tray context: Manage");
+            Dispatcher.BeginInvoke(ShowManage, DispatcherPriority.Normal);
+        });
         menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add("Exit", null, (_, _) => Shutdown());
+        menu.Items.Add("Exit", null, (_, _) =>
+        {
+            AppLog.Info("Tray context: Exit");
+            Dispatcher.BeginInvoke(Shutdown, DispatcherPriority.Normal);
+        });
         return menu;
     }
 
-    private void TrayOnMouseUp(object? sender, Forms.MouseEventArgs e)
+    private void TrayOnMouseClick(object? sender, Forms.MouseEventArgs e)
     {
-        if (e.Button == Forms.MouseButtons.Left)
+        AppLog.Info($"Tray MouseClick button={e.Button} at WinForms({e.X},{e.Y}) screen={Forms.Control.MousePosition}");
+
+        if (e.Button != Forms.MouseButtons.Left)
+            return;
+
+        // Defer past the shell/tray click so the new window isn't immediately deactivated.
+        Dispatcher.BeginInvoke(() =>
+        {
+            AppLog.Info("Dispatcher: handling left-click → ShowFlyout");
             ShowFlyout();
+        }, DispatcherPriority.ApplicationIdle);
     }
 
     private void ShowFlyout()
     {
         if (_controller is null)
+        {
+            AppLog.Warn("ShowFlyout aborted: controller null");
             return;
+        }
 
-        _flyout ??= new FlyoutWindow(_controller);
-        _flyout.Reload();
-        _flyout.ShowNearCursor();
+        try
+        {
+            _flyout ??= new FlyoutWindow(_controller);
+
+            if (_flyout.IsVisible)
+            {
+                AppLog.Info("Flyout already visible — toggling closed.");
+                _flyout.HideFlyout("toggle");
+                return;
+            }
+
+            AppLog.Info("ShowFlyout: fast reload (no icons) + show");
+            _flyout.Reload(includeIcons: false);
+            _flyout.ShowNearTray();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("ShowFlyout failed", ex);
+        }
     }
 
     internal void ShowManage()
@@ -67,6 +174,7 @@ public partial class App : System.Windows.Application
         if (_controller is null)
             return;
 
+        AppLog.Info("ShowManage");
         if (_manage is { IsLoaded: true })
         {
             _manage.Activate();
@@ -74,12 +182,17 @@ public partial class App : System.Windows.Application
         }
 
         _manage = new ManageWindow(_controller);
-        _manage.Closed += (_, _) => _manage = null;
+        _manage.Closed += (_, _) =>
+        {
+            AppLog.Info("ManageWindow closed");
+            _manage = null;
+        };
         _manage.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        AppLog.Info($"OnExit code={e.ApplicationExitCode}");
         if (_tray is not null)
         {
             _tray.Visible = false;

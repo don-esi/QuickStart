@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using QuickStartMenu.Models;
 using QuickStartMenu.Services;
 
@@ -10,22 +11,42 @@ namespace QuickStartMenu.Views;
 public partial class FlyoutWindow : Window
 {
     private readonly MenuController _controller;
+    private bool _ignoreDeactivate;
+    private DispatcherTimer? _armTimer;
 
     public FlyoutWindow(MenuController controller)
     {
         _controller = controller;
         InitializeComponent();
-        Reload();
-        _controller.Changed += (_, _) => Dispatcher.Invoke(Reload);
+
+        ShowActivated = true;
+        Visibility = Visibility.Hidden;
+
+        Reload(includeIcons: false);
+        _controller.Changed += (_, _) =>
+        {
+            AppLog.Info("Config changed → flyout Reload");
+            Dispatcher.BeginInvoke(() => Reload(includeIcons: true), DispatcherPriority.Background);
+        };
+
+        IsVisibleChanged += (_, _) =>
+            AppLog.Info($"Flyout IsVisibleChanged → {IsVisible} Left={Left:0} Top={Top:0} Size={ActualWidth:0}x{ActualHeight:0}");
+
+        Activated += (_, _) => AppLog.Info("Flyout Activated");
+        Deactivated += (_, _) => AppLog.Info($"Flyout Deactivated (ignore={_ignoreDeactivate})");
+        ContentRendered += (_, _) => AppLog.Info($"Flyout ContentRendered size={ActualWidth:0}x{ActualHeight:0}");
+
+        AppLog.Info("FlyoutWindow ctor done");
     }
 
-    public void Reload()
+    public void Reload(bool includeIcons = true)
     {
+        AppLog.Info($"Flyout Reload start includeIcons={includeIcons} folders={_controller.Config.Folders.Count} rootItems={_controller.Config.RootItems.Count}");
         MenuHost.Children.Clear();
         var config = _controller.Config;
 
         foreach (var folder in config.Folders)
-            MenuHost.Children.Add(BuildFolderBlock(folder));
+            MenuHost.Children.Add(BuildFolderBlock(folder, includeIcons));
 
         if (config.RootItems.Count > 0)
         {
@@ -33,7 +54,7 @@ public partial class FlyoutWindow : Window
                 MenuHost.Children.Add(CreateSectionLabel("Pinned"));
 
             foreach (var item in config.RootItems)
-                MenuHost.Children.Add(BuildItemButton(item));
+                MenuHost.Children.Add(BuildItemButton(item, includeIcons));
         }
 
         if (config.Folders.Count == 0 && config.RootItems.Count == 0)
@@ -48,38 +69,162 @@ public partial class FlyoutWindow : Window
                 TextWrapping = TextWrapping.Wrap
             });
         }
+
+        AppLog.Info("Flyout Reload end");
     }
 
-    public void ShowNearCursor()
+    /// <summary>
+    /// Show near the tray click. Never call Window.Measure(∞) — that FailFasts in GetWindowMinMax.
+    /// </summary>
+    public void ShowNearTray()
     {
+        AppLog.Info("ShowNearTray begin");
+
         var point = System.Windows.Forms.Control.MousePosition;
         var work = System.Windows.Forms.Screen.FromPoint(point).WorkingArea;
 
-        Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        Arrange(new Rect(DesiredSize));
-
-        var width = ActualWidth > 0 ? ActualWidth : DesiredSize.Width;
-        var height = ActualHeight > 0 ? ActualHeight : DesiredSize.Height;
+        // Measure CONTENT only (safe). Measuring the Window with ∞ triggers FailFast.
+        var (width, height) = EstimateContentSize();
+        AppLog.Info($"ShowNearTray estimated size={width:0}x{height:0}");
 
         var left = point.X - width / 2;
-        var top = point.Y - height - 12;
+        var top = point.Y - height - 16;
 
-        if (top < work.Top)
-            top = point.Y + 12;
-        if (left < work.Left)
+        if (top < work.Top + 4)
+            top = point.Y + 16;
+        if (left < work.Left + 4)
             left = work.Left + 8;
-        if (left + width > work.Right)
+        if (left + width > work.Right - 4)
             left = work.Right - width - 8;
-        if (top + height > work.Bottom)
-            top = work.Bottom - height - 8;
+        if (top + height > work.Bottom - 4)
+            top = Math.Max(work.Top + 8, work.Bottom - height - 8);
 
         Left = left;
         Top = top;
-        Show();
-        Activate();
+
+        AppLog.Info(
+            $"ShowNearTray mouse=({point.X},{point.Y}) work=[{work.Left},{work.Top}-{work.Right},{work.Bottom}] " +
+            $"place=({left:0},{top:0})");
+
+        ArmDeactivateGuard(TimeSpan.FromMilliseconds(500));
+
+        try
+        {
+            if (!IsVisible)
+            {
+                Show();
+                AppLog.Info("Flyout Show() called");
+            }
+            else
+            {
+                Visibility = Visibility.Visible;
+                AppLog.Info("Flyout set Visible on existing HWND");
+            }
+
+            // Re-clamp after SizeToContent lays out for real.
+            Dispatcher.BeginInvoke(() =>
+            {
+                try
+                {
+                    ClampToWorkingArea(point, work);
+                    Activate();
+                    Focus();
+                    AppLog.Info($"Post-layout clamp IsActive={IsActive} IsVisible={IsVisible} bounds=({Left:0},{Top:0}) {ActualWidth:0}x{ActualHeight:0}");
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Error("Post-layout clamp failed", ex);
+                }
+            }, DispatcherPriority.Loaded);
+
+            // Icons after visible so shell extract never blocks open.
+            Dispatcher.BeginInvoke(() =>
+            {
+                try
+                {
+                    AppLog.Info("Post-show icon enrich Reload");
+                    Reload(includeIcons: true);
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Error("Icon enrich failed", ex);
+                }
+            }, DispatcherPriority.Background);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("ShowNearTray failed", ex);
+            throw;
+        }
     }
 
-    private UIElement BuildFolderBlock(MenuFolder folder)
+    private (double Width, double Height) EstimateContentSize()
+    {
+        try
+        {
+            if (Content is FrameworkElement root)
+            {
+                // Measure the content element only — never Window.Measure(∞)
+                // (that FailFasts in GetWindowMinMax → "Unknown Hard Error").
+                root.Measure(new Size(360, double.PositiveInfinity));
+                var w = Math.Clamp(root.DesiredSize.Width, 260, 360);
+                var h = Math.Clamp(root.DesiredSize.Height, 80, 520);
+                return (w, h);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Content measure failed: {ex.Message}");
+        }
+
+        return (280, 320);
+    }
+
+    private void ClampToWorkingArea(System.Drawing.Point point, System.Drawing.Rectangle work)
+    {
+        var width = ActualWidth > 0 ? ActualWidth : 280;
+        var height = ActualHeight > 0 ? ActualHeight : 200;
+
+        var left = Left;
+        var top = Top;
+
+        if (left < work.Left + 4)
+            left = work.Left + 8;
+        if (left + width > work.Right - 4)
+            left = work.Right - width - 8;
+        if (top < work.Top + 4)
+            top = point.Y + 16;
+        if (top + height > work.Bottom - 4)
+            top = Math.Max(work.Top + 8, work.Bottom - height - 8);
+
+        Left = left;
+        Top = top;
+    }
+
+    public void HideFlyout(string reason)
+    {
+        AppLog.Info($"HideFlyout reason={reason}");
+        _ignoreDeactivate = false;
+        _armTimer?.Stop();
+        Hide();
+    }
+
+    private void ArmDeactivateGuard(TimeSpan duration)
+    {
+        _ignoreDeactivate = true;
+        _armTimer?.Stop();
+        _armTimer = new DispatcherTimer { Interval = duration };
+        _armTimer.Tick += (_, _) =>
+        {
+            _armTimer.Stop();
+            _ignoreDeactivate = false;
+            AppLog.Info("Deactivate guard cleared — clicks outside will dismiss");
+        };
+        _armTimer.Start();
+        AppLog.Info($"Deactivate guard armed for {duration.TotalMilliseconds:0}ms");
+    }
+
+    private UIElement BuildFolderBlock(MenuFolder folder, bool includeIcons)
     {
         var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
         panel.Children.Add(CreateSectionLabel(folder.Name));
@@ -97,7 +242,7 @@ public partial class FlyoutWindow : Window
         else
         {
             foreach (var item in folder.Items)
-                panel.Children.Add(BuildItemButton(item));
+                panel.Children.Add(BuildItemButton(item, includeIcons));
         }
 
         return panel;
@@ -113,20 +258,23 @@ public partial class FlyoutWindow : Window
         Margin = new Thickness(8, 6, 8, 4)
     };
 
-    private Button BuildItemButton(MenuItemEntry item)
+    private Button BuildItemButton(MenuItemEntry item, bool includeIcons)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal };
-        var icon = IconService.GetIcon(item.Path);
-        if (icon is not null)
+        if (includeIcons)
         {
-            content.Children.Add(new Image
+            var icon = IconService.GetIcon(item.Path);
+            if (icon is not null)
             {
-                Source = icon,
-                Width = 16,
-                Height = 16,
-                Margin = new Thickness(0, 0, 8, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            });
+                content.Children.Add(new Image
+                {
+                    Source = icon,
+                    Width = 16,
+                    Height = 16,
+                    Margin = new Thickness(0, 0, 8, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            }
         }
 
         content.Children.Add(new TextBlock
@@ -155,13 +303,16 @@ public partial class FlyoutWindow : Window
         if (sender is not Button { Tag: MenuItemEntry item })
             return;
 
+        AppLog.Info($"Launch click name={item.Name} path={item.Path}");
         try
         {
             LaunchService.Launch(item.Path, item.Arguments, item.WorkingDirectory);
-            Hide();
+            AppLog.Info("Launch started OK");
+            HideFlyout("launch");
         }
         catch (Exception ex)
         {
+            AppLog.Error("Launch failed", ex);
             MessageBox.Show(
                 this,
                 $"Could not launch:\n{item.Path}\n\n{ex.Message}",
@@ -173,16 +324,30 @@ public partial class FlyoutWindow : Window
 
     private void Manage_Click(object sender, RoutedEventArgs e)
     {
-        Hide();
+        AppLog.Info("Flyout Manage button");
+        HideFlyout("manage");
         if (System.Windows.Application.Current is App app)
             app.ShowManage();
     }
 
-    private void OnDeactivated(object sender, EventArgs e) => Hide();
+    private void OnDeactivated(object sender, EventArgs e)
+    {
+        if (_ignoreDeactivate)
+        {
+            AppLog.Info("OnDeactivated ignored (guard)");
+            return;
+        }
+
+        AppLog.Info("OnDeactivated → hide");
+        HideFlyout("deactivated");
+    }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
-            Hide();
+        {
+            AppLog.Info("Escape → hide");
+            HideFlyout("escape");
+        }
     }
 }

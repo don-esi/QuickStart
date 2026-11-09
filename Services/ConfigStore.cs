@@ -31,6 +31,7 @@ public sealed class ConfigStore
     {
         if (!File.Exists(_configPath))
         {
+            AppLog.Info($"Config missing — writing defaults to {_configPath}");
             var defaults = MenuConfig.CreateDefault();
             Save(defaults);
             return defaults;
@@ -39,10 +40,13 @@ public sealed class ConfigStore
         try
         {
             var json = File.ReadAllText(_configPath);
-            return JsonSerializer.Deserialize<MenuConfig>(json, JsonOptions) ?? MenuConfig.CreateDefault();
+            var config = JsonSerializer.Deserialize<MenuConfig>(json, JsonOptions) ?? MenuConfig.CreateDefault();
+            AppLog.Info($"Config loaded from {_configPath} ({json.Length} bytes)");
+            return config;
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error("Config load failed — using defaults", ex);
             return MenuConfig.CreateDefault();
         }
     }
@@ -51,5 +55,6 @@ public sealed class ConfigStore
     {
         var json = JsonSerializer.Serialize(config, JsonOptions);
         File.WriteAllText(_configPath, json);
+        AppLog.Info($"Config saved ({json.Length} bytes)");
     }
 }

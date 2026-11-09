@@ -38,11 +38,20 @@ Or launch the built exe:
 .\bin\Release\net10.0-windows\QuickStartMenu.exe
 ```
 
-## Config
+## Config / debug log
 
-Menu layout is stored at:
+- Menu: `%AppData%\QuickStartMenu\menu.json`
+- Debug log: `%AppData%\QuickStartMenu\debug.log`
 
-`%AppData%\QuickStartMenu\menu.json`
+Left-click the tray icon to open the flyout; right-click for Manage / Exit.
+
+## Smoke test
+
+```powershell
+dotnet run --project QuickStartMenu.csproj -c Release -- --smoke-flyout
+```
+
+Expect exit code `0` and `Smoke: ... result=PASS` in the debug log.
 
 ## Pinned-apps note
 
