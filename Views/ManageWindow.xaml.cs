@@ -35,7 +35,8 @@ public partial class ManageWindow : Window
             var folderNode = CreateFolderNode(folder);
             foreach (var item in folder.Items)
                 folderNode.Items.Add(CreateItemNode(item, folder.Id));
-            folderNode.IsExpanded = true;
+            // Always start collapsed; do not persist expand state.
+            folderNode.IsExpanded = false;
             MenuTree.Items.Add(folderNode);
         }
 
@@ -43,7 +44,7 @@ public partial class ManageWindow : Window
         {
             Header = BuildHeader("Root items", isFolder: true),
             Tag = new NodeTag(NodeKind.Root, null, null),
-            IsExpanded = true
+            IsExpanded = false
         };
         foreach (var item in config.RootItems)
             root.Items.Add(CreateItemNode(item, folderId: null));

@@ -251,12 +251,10 @@ public partial class FlyoutWindow : Window
 
     private UIElement BuildFolderBlock(MenuFolder folder, bool includeIcons)
     {
-        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
-        panel.Children.Add(CreateSectionLabel(folder.Name));
-
+        var items = new StackPanel();
         if (folder.Items.Count == 0)
         {
-            panel.Children.Add(new TextBlock
+            items.Children.Add(new TextBlock
             {
                 Text = "(empty)",
                 Foreground = (Brush)FindResource("MutedBrush"),
@@ -267,10 +265,22 @@ public partial class FlyoutWindow : Window
         else
         {
             foreach (var item in folder.Items)
-                panel.Children.Add(BuildItemButton(item, includeIcons));
+                items.Children.Add(BuildItemButton(item, includeIcons));
         }
 
-        return panel;
+        // Always start collapsed; Reload rebuilds UI so expand state is never retained.
+        return new Expander
+        {
+            Header = folder.Name.ToUpperInvariant(),
+            IsExpanded = false,
+            Margin = new Thickness(0, 0, 0, 4),
+            FontFamily = (FontFamily)FindResource("UiFont"),
+            FontSize = 10,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("MutedBrush"),
+            Padding = new Thickness(4, 2, 4, 2),
+            Content = items
+        };
     }
 
     private TextBlock CreateSectionLabel(string text) => new()
