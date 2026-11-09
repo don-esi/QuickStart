@@ -4,6 +4,8 @@ Minimalist Windows start-menu alternative (PSMenu-like) built with **WPF** for *
 
 Repository: https://github.com/don-esi/QuickStartMenu
 
+> Built with [Cursor](https://cursor.com) / Grok.
+
 | | |
 |---|---|
 | Solution | `QuickStartMenu.sln` (VS Version 18) |
