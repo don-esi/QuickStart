@@ -2,6 +2,8 @@
 
 Minimalist Windows start-menu alternative (PSMenu-like) built with **WPF** for **Visual Studio 2026**.
 
+Repository: https://github.com/don-esi/QuickStartMenu
+
 | | |
 |---|---|
 | Solution | `QuickStartMenu.sln` (VS Version 18) |
