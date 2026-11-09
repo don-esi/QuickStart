@@ -19,6 +19,7 @@ public partial class ManageWindow : Window
     {
         _controller = controller;
         InitializeComponent();
+        Icon = IconService.GetAppWindowIcon();
         StartupCheck.IsChecked = _controller.Config.StartWithWindows;
         StatusText.Text = _controller.ConfigPath;
         RebuildTree();

@@ -19,6 +19,7 @@ public partial class FlyoutWindow : Window
     {
         _controller = controller;
         InitializeComponent();
+        Icon = IconService.GetAppWindowIcon();
 
         ShowActivated = true;
         Visibility = Visibility.Hidden;

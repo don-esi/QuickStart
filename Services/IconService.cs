@@ -59,6 +59,44 @@ public static class IconService
         return source;
     }
 
+    private static ImageSource? _appWindowIcon;
+
+    /// <summary>
+    /// WPF Window.Icon / Alt-Tab image from the multi-size app.ico (Start-grid).
+    /// </summary>
+    public static ImageSource? GetAppWindowIcon()
+    {
+        if (_appWindowIcon is not null)
+            return _appWindowIcon;
+
+        try
+        {
+            foreach (var candidate in AppIconCandidates())
+            {
+                if (!File.Exists(candidate))
+                    continue;
+
+                // BitmapFrame keeps the .ico frames so WPF/Windows can pick a size.
+                var frame = BitmapFrame.Create(
+                    new Uri(candidate, UriKind.Absolute),
+                    BitmapCreateOptions.None,
+                    BitmapCacheOption.OnLoad);
+                frame.Freeze();
+                _appWindowIcon = frame;
+                AppLog.Info($"Window icon loaded from {candidate}");
+                return _appWindowIcon;
+            }
+
+            AppLog.Warn("app.ico not found for Window.Icon");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"GetAppWindowIcon failed: {ex.Message}");
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Load the multi-size app.ico (preferred) or fall back to a generated glyph.
     /// </summary>
@@ -108,19 +146,18 @@ public static class IconService
 
     private static Icon CreateFallbackTrayIcon()
     {
+        // Mini Start-grid (4 blue tiles) so tray still matches if .ico is missing.
         using var bmp = new Bitmap(16, 16);
         using (var g = Graphics.FromImage(bmp))
         {
             g.Clear(System.Drawing.Color.Transparent);
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-            using var fill = new SolidBrush(System.Drawing.Color.FromArgb(255, 242, 242, 240));
-            using var ink = new SolidBrush(System.Drawing.Color.FromArgb(255, 28, 28, 28));
-            using var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(255, 28, 28, 28));
-            g.FillRectangle(fill, 1, 1, 14, 14);
-            g.DrawRectangle(pen, 1, 1, 13, 13);
-            g.FillRectangle(ink, 3, 4, 10, 2);
-            g.FillRectangle(ink, 3, 7, 10, 2);
-            g.FillRectangle(ink, 3, 10, 7, 2);
+            using var light = new SolidBrush(System.Drawing.Color.FromArgb(255, 0x3C, 0xBE, 0xF5));
+            using var dark = new SolidBrush(System.Drawing.Color.FromArgb(255, 0x00, 0x78, 0xD4));
+            g.FillRectangle(light, 1, 1, 6, 6);
+            g.FillRectangle(light, 9, 1, 6, 6);
+            g.FillRectangle(dark, 1, 9, 6, 6);
+            g.FillRectangle(dark, 9, 9, 6, 6);
         }
 
         var hIcon = bmp.GetHicon();
