@@ -10,6 +10,7 @@ Repository: https://github.com/don-esi/QuickStartMenu
 | TFM | `net10.0-windows` |
 | SDK on machine | .NET 10 (`10.0.403`) |
 | Language | C# (`LangVersion=latest`; C# 13+ with .NET 10) |
+| App / tray icon | `Resources\app.ico` (multi-size 16–256; light menu-card glyph) |
 
 ## Features
 

@@ -15,9 +15,19 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Flat repo layout: keep helper tools out of the app compile. -->
+    <Compile Remove="tools\**" />
+    <None Remove="tools\**" />
+    <EmbeddedResource Remove="tools\**" />
+    <!-- Loose copy so tray NotifyIcon can load a crisp size from the multi-size .ico -->
+    <None Include="Resources\app.ico" CopyToOutputDirectory="PreserveNewest" Link="app.ico" />
+  </ItemGroup>
 
   <!-- Used by scripts/build-installer.ps1 (self-contained tray utility, no runtime install). -->
   <PropertyGroup Condition="'$(PublishInstaller)' == 'true'">
