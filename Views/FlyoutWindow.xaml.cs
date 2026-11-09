@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using QuickStartMenu.Models;
@@ -74,24 +75,35 @@ public partial class FlyoutWindow : Window
     }
 
     /// <summary>
-    /// Show near the tray click. Never call Window.Measure(∞) — that FailFasts in GetWindowMinMax.
+    /// Show near the tray click. Converts WinForms physical pixels → WPF DIPs
+    /// (without that, high-DPI trays place the window off-screen while IsVisible=true).
+    /// Never call Window.Measure(∞) — FailFasts in GetWindowMinMax.
     /// </summary>
     public void ShowNearTray()
     {
         AppLog.Info("ShowNearTray begin");
 
-        var point = System.Windows.Forms.Control.MousePosition;
-        var work = System.Windows.Forms.Screen.FromPoint(point).WorkingArea;
+        var physicalMouse = System.Windows.Forms.Control.MousePosition;
+        var physicalWork = System.Windows.Forms.Screen.FromPoint(physicalMouse).WorkingArea;
 
-        // Measure CONTENT only (safe). Measuring the Window with ∞ triggers FailFast.
+        // Create HWND early so TransformFromDevice is real.
+        _ = new WindowInteropHelper(this).EnsureHandle();
+        var mouse = DpiHelper.PhysicalToDip(this, physicalMouse.X, physicalMouse.Y);
+        var work = DpiHelper.PhysicalToDip(this, physicalWork);
+        var scale = GetDpiScale();
+
         var (width, height) = EstimateContentSize();
-        AppLog.Info($"ShowNearTray estimated size={width:0}x{height:0}");
+        AppLog.Info(
+            $"ShowNearTray dpiScale={scale.X:0.###}x{scale.Y:0.###} " +
+            $"physMouse=({physicalMouse.X},{physicalMouse.Y}) dipMouse=({mouse.X:0},{mouse.Y:0}) " +
+            $"physWork=[{physicalWork.Left},{physicalWork.Top}-{physicalWork.Right},{physicalWork.Bottom}] " +
+            $"dipWork=[{work.Left:0},{work.Top:0}-{work.Right:0},{work.Bottom:0}] est={width:0}x{height:0}");
 
-        var left = point.X - width / 2;
-        var top = point.Y - height - 16;
+        var left = mouse.X - width / 2;
+        var top = mouse.Y - height - 16;
 
         if (top < work.Top + 4)
-            top = point.Y + 16;
+            top = mouse.Y + 16;
         if (left < work.Left + 4)
             left = work.Left + 8;
         if (left + width > work.Right - 4)
@@ -101,15 +113,13 @@ public partial class FlyoutWindow : Window
 
         Left = left;
         Top = top;
-
-        AppLog.Info(
-            $"ShowNearTray mouse=({point.X},{point.Y}) work=[{work.Left},{work.Top}-{work.Right},{work.Bottom}] " +
-            $"place=({left:0},{top:0})");
+        AppLog.Info($"ShowNearTray placeDIP=({left:0},{top:0}) sizeDIP={width:0}x{height:0}");
 
         ArmDeactivateGuard(TimeSpan.FromMilliseconds(500));
 
         try
         {
+            Topmost = true;
             if (!IsVisible)
             {
                 Show();
@@ -121,15 +131,17 @@ public partial class FlyoutWindow : Window
                 AppLog.Info("Flyout set Visible on existing HWND");
             }
 
-            // Re-clamp after SizeToContent lays out for real.
             Dispatcher.BeginInvoke(() =>
             {
                 try
                 {
-                    ClampToWorkingArea(point, work);
+                    ClampToDipWorkArea(mouse, work);
                     Activate();
                     Focus();
-                    AppLog.Info($"Post-layout clamp IsActive={IsActive} IsVisible={IsVisible} bounds=({Left:0},{Top:0}) {ActualWidth:0}x{ActualHeight:0}");
+                    AppLog.Info(
+                        $"Post-layout IsActive={IsActive} IsVisible={IsVisible} " +
+                        $"boundsDIP=({Left:0},{Top:0}) {ActualWidth:0}x{ActualHeight:0} " +
+                        $"onScreen={IsOnScreen(work)}");
                 }
                 catch (Exception ex)
                 {
@@ -137,7 +149,6 @@ public partial class FlyoutWindow : Window
                 }
             }, DispatcherPriority.Loaded);
 
-            // Icons after visible so shell extract never blocks open.
             Dispatcher.BeginInvoke(() =>
             {
                 try
@@ -158,14 +169,27 @@ public partial class FlyoutWindow : Window
         }
     }
 
+    private Point GetDpiScale()
+    {
+        var m = DpiHelper.GetTransformFromDevice(this);
+        // TransformFromDevice scales physical→DIP; scale factors are M11/M22.
+        var sx = m.M11 == 0 ? 1 : 1 / m.M11;
+        var sy = m.M22 == 0 ? 1 : 1 / m.M22;
+        return new Point(sx, sy);
+    }
+
+    private bool IsOnScreen(Rect workDip)
+    {
+        var r = new Rect(Left, Top, Math.Max(ActualWidth, 1), Math.Max(ActualHeight, 1));
+        return r.IntersectsWith(workDip);
+    }
+
     private (double Width, double Height) EstimateContentSize()
     {
         try
         {
             if (Content is FrameworkElement root)
             {
-                // Measure the content element only — never Window.Measure(∞)
-                // (that FailFasts in GetWindowMinMax → "Unknown Hard Error").
                 root.Measure(new Size(360, double.PositiveInfinity));
                 var w = Math.Clamp(root.DesiredSize.Width, 260, 360);
                 var h = Math.Clamp(root.DesiredSize.Height, 80, 520);
@@ -180,7 +204,7 @@ public partial class FlyoutWindow : Window
         return (280, 320);
     }
 
-    private void ClampToWorkingArea(System.Drawing.Point point, System.Drawing.Rectangle work)
+    private void ClampToDipWorkArea(Point mouseDip, Rect workDip)
     {
         var width = ActualWidth > 0 ? ActualWidth : 280;
         var height = ActualHeight > 0 ? ActualHeight : 200;
@@ -188,14 +212,14 @@ public partial class FlyoutWindow : Window
         var left = Left;
         var top = Top;
 
-        if (left < work.Left + 4)
-            left = work.Left + 8;
-        if (left + width > work.Right - 4)
-            left = work.Right - width - 8;
-        if (top < work.Top + 4)
-            top = point.Y + 16;
-        if (top + height > work.Bottom - 4)
-            top = Math.Max(work.Top + 8, work.Bottom - height - 8);
+        if (left < workDip.Left + 4)
+            left = workDip.Left + 8;
+        if (left + width > workDip.Right - 4)
+            left = workDip.Right - width - 8;
+        if (top < workDip.Top + 4)
+            top = mouseDip.Y + 16;
+        if (top + height > workDip.Bottom - 4)
+            top = Math.Max(workDip.Top + 8, workDip.Bottom - height - 8);
 
         Left = left;
         Top = top;

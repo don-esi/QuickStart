@@ -35,7 +35,7 @@ public partial class App : System.Windows.Application
             args.SetObserved();
         };
 
-        AppLog.Info($"Startup begin. build=2026-11-09-flyout-fix Log={AppLog.LogFilePath}");
+        AppLog.Info($"Startup begin. build=2026-11-09-dpi-fix Log={AppLog.LogFilePath}");
         AppLog.Info($"ProcessPath={Environment.ProcessPath}; BaseDir={AppContext.BaseDirectory}");
         AppLog.Info($"Args=[{string.Join(' ', e.Args)}]");
 
@@ -87,15 +87,36 @@ public partial class App : System.Windows.Application
         open.Tick += (_, _) =>
         {
             open.Stop();
+
+            // Simulate a tray-corner click (high physical coords) — the DPI bug only
+            // showed up there; center-screen smoke can pass while tray clicks fail.
+            var screen = Forms.Screen.PrimaryScreen ?? Forms.Screen.AllScreens[0];
+            var trayish = new System.Drawing.Point(
+                screen.WorkingArea.Right - 40,
+                screen.WorkingArea.Bottom - 8);
+            Forms.Cursor.Position = trayish;
+            AppLog.Info($"Smoke: cursor forced to trayish phys=({trayish.X},{trayish.Y})");
+
             ShowFlyout();
-            AppLog.Info($"Smoke: after ShowFlyout IsVisible={_flyout?.IsVisible} IsActive={_flyout?.IsActive}");
+            AppLog.Info($"Smoke: after ShowFlyout IsVisible={_flyout?.IsVisible} IsActive={_flyout?.IsActive} Left={_flyout?.Left:0} Top={_flyout?.Top:0}");
 
             var check = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
             check.Tick += (_, _) =>
             {
                 check.Stop();
-                var ok = _flyout is { IsVisible: true };
-                AppLog.Info($"Smoke: after guard IsVisible={_flyout?.IsVisible} result={(ok ? "PASS" : "FAIL")}");
+                var visible = _flyout is { IsVisible: true };
+                var onScreen = false;
+                if (_flyout is not null)
+                {
+                    var work = DpiHelper.PhysicalToDip(_flyout, screen.WorkingArea);
+                    var bounds = new Rect(_flyout.Left, _flyout.Top,
+                        Math.Max(_flyout.ActualWidth, 1), Math.Max(_flyout.ActualHeight, 1));
+                    onScreen = bounds.IntersectsWith(work);
+                    AppLog.Info($"Smoke: boundsDIP={bounds} workDIP={work} onScreen={onScreen}");
+                }
+
+                var ok = visible && onScreen;
+                AppLog.Info($"Smoke: result={(ok ? "PASS" : "FAIL")} visible={visible} onScreen={onScreen}");
                 Shutdown(ok ? 0 : 2);
             };
             check.Start();

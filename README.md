@@ -51,7 +51,8 @@ Left-click the tray icon to open the flyout; right-click for Manage / Exit.
 dotnet run --project QuickStartMenu.csproj -c Release -- --smoke-flyout
 ```
 
-Expect exit code `0` and `Smoke: ... result=PASS` in the debug log.
+Expect exit code `0` and `Smoke: ... result=PASS` / `onScreen=True` in `%AppData%\QuickStartMenu\debug.log`.
+Startup stamp should be `build=2026-11-09-dpi-fix`.
 
 ## Pinned-apps note
 
