@@ -38,7 +38,7 @@ public partial class App : System.Windows.Application
             args.SetObserved();
         };
 
-        AppLog.Info($"Startup begin. build=2026-11-09-tray-promote Log={AppLog.LogFilePath}");
+        AppLog.Info($"Startup begin. build=2026-11-09-tray-promote-quiet Log={AppLog.LogFilePath}");
         AppLog.Info($"ProcessPath={Environment.ProcessPath}; BaseDir={AppContext.BaseDirectory}");
         AppLog.Info($"Args=[{string.Join(' ', e.Args)}]");
         AppLog.Info($"OS build={Environment.OSVersion.Version.Build} Win11Promote={TrayIconPromoter.IsWindows11OrLater}");
@@ -51,8 +51,7 @@ public partial class App : System.Windows.Application
             AppLog.Info(
                 $"Config loaded: folders={_controller.Config.Folders.Count}, " +
                 $"rootItems={_controller.Config.RootItems.Count}, " +
-                $"startWithWindows={_controller.Config.StartWithWindows}, " +
-                $"trayGuidanceShown={_controller.Config.TrayGuidanceShown}");
+                $"startWithWindows={_controller.Config.StartWithWindows}");
 
             var swept = TrayIconPromoter.SweepStaleEntries();
             if (swept > 0)
@@ -71,14 +70,10 @@ public partial class App : System.Windows.Application
 
             // MouseClick (not MouseUp) for a clean single left-click; marshal to WPF dispatcher.
             _tray.MouseClick += TrayOnMouseClick;
-            _tray.BalloonTipClicked += (_, _) =>
-            {
-                AppLog.Info("Balloon tip clicked → taskbar settings");
-                TrayVisibilityGuidance.OpenTaskbarSettings();
-            };
             _tray.ContextMenuStrip = BuildTrayMenu();
             AppLog.Info("Tray icon created (MouseClick + ContextMenuStrip).");
 
+            // Silent best-effort promote only — no first-run balloon/dialog (Windows prompts itself).
             ScheduleTrayPromotion();
 
             _flyout = new FlyoutWindow(_controller);
@@ -86,8 +81,6 @@ public partial class App : System.Windows.Application
 
             if (e.Args.Any(a => string.Equals(a, "--smoke-flyout", StringComparison.OrdinalIgnoreCase)))
                 ScheduleSmokeFlyout();
-            else
-                ScheduleFirstRunTrayGuidance();
         }
         catch (Exception ex)
         {
@@ -123,55 +116,6 @@ public partial class App : System.Windows.Application
             }
         };
         _promoteTimer.Start();
-    }
-
-    private void ScheduleFirstRunTrayGuidance()
-    {
-        if (_controller is null || _controller.Config.TrayGuidanceShown || _tray is null)
-            return;
-
-        // Let Explorer finish NIM_ADD / promote attempts before nudging the user.
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-        timer.Tick += (_, _) =>
-        {
-            timer.Stop();
-            ShowFirstRunTrayGuidance();
-        };
-        timer.Start();
-    }
-
-    private void ShowFirstRunTrayGuidance()
-    {
-        if (_controller is null || _tray is null)
-            return;
-        if (_controller.Config.TrayGuidanceShown)
-            return;
-
-        AppLog.Info("Showing first-run tray visibility guidance");
-        try
-        {
-            _tray.BalloonTipTitle = "Keep Quick Start Menu visible";
-            _tray.BalloonTipText =
-                "Windows may hide this icon in the overflow (^). " +
-                "Click here for Taskbar settings, or turn on Quick Start Menu under Other system tray icons.";
-            _tray.BalloonTipIcon = Forms.ToolTipIcon.Info;
-            _tray.ShowBalloonTip(12_000);
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn($"ShowBalloonTip failed: {ex.Message}");
-        }
-
-        var result = Forms.MessageBox.Show(
-            TrayVisibilityGuidance.ManualSteps + "\n\nOpen Taskbar settings now?",
-            "Quick Start Menu — tray icon",
-            Forms.MessageBoxButtons.YesNo,
-            Forms.MessageBoxIcon.Information);
-
-        if (result == Forms.DialogResult.Yes)
-            TrayVisibilityGuidance.OpenTaskbarSettings();
-
-        _controller.MarkTrayGuidanceShown();
     }
 
     private void ScheduleSmokeFlyout()

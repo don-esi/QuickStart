@@ -51,7 +51,7 @@ Left-click the tray icon to open the flyout; right-click for Manage / Exit.
 
 Microsoft does **not** provide a supported API to force a notification icon into the always-visible tray. New icons go to the overflow (`^`) by default.
 
-On **Windows 11**, Quick Start Menu best-effort sets the undocumented `IsPromoted=1` value under `HKCU\Control Panel\NotifyIconSettings` when Explorer creates our entry (and never overrides an explicit user hide). First run also shows a balloon + short guidance and can open Taskbar settings.
+On **Windows 11**, Quick Start Menu best-effort sets the undocumented `IsPromoted=1` value under `HKCU\Control Panel\NotifyIconSettings` when Explorer creates our entry (and never overrides an explicit user hide). We do **not** show our own first-run pin balloon/dialog — Windows already prompts.
 
 **Manual (any Windows 10/11):** Settings → Personalization → Taskbar → **Other system tray icons** → enable Quick Start Menu.  
 Tray menu / Manage → **Keep icon visible…** / **Tray icon settings…** opens the same Settings page.
