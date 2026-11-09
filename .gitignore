@@ -30,6 +30,9 @@ _ReSharper*/
 **/[Pp]ackages/*
 !**/[Pp]ackages/build/
 
+## Build outputs / installer artifacts
+artifacts/
+
 ## OS / misc
 Thumbs.db
 Desktop.ini

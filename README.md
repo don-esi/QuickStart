@@ -47,6 +47,25 @@ Or launch the built exe:
 
 Left-click the tray icon to open the flyout; right-click for Manage / Exit.
 
+## Installer (Inno Setup)
+
+Self-contained **win-x64** single-file publish + Inno Setup 6 setup exe. No separate .NET runtime install required. “Start with Windows” stays the in-app toggle (HKCU Run); uninstall clears that key if present.
+
+**Prerequisite:** [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`)
+
+```powershell
+cd D:\Source\QuickStartMenu
+.\scripts\build-installer.ps1
+# optional: .\scripts\build-installer.ps1 -Version 1.0.1
+```
+
+**Output:** `artifacts\installer\QuickStartMenu-Setup-<version>.exe`  
+(e.g. `D:\Source\QuickStartMenu\artifacts\installer\QuickStartMenu-Setup-1.0.0.exe`)
+
+The installer adds a Start Menu shortcut; desktop shortcut is optional. Per-user install by default (`PrivilegesRequired=lowest`).
+
+Script / ISS: `scripts\build-installer.ps1`, `installer\QuickStartMenu.iss`
+
 ## Smoke test
 
 ```powershell
