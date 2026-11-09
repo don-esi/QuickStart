@@ -62,18 +62,27 @@ Self-contained **win-x64** single-file publish + Inno Setup 6 setup exe. No sepa
 
 **Prerequisite:** [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`)
 
+### From Visual Studio 2026
+
+1. Open `QuickStartMenu.sln`
+2. Set solution configuration to **Release**
+3. **Build → Build Solution** (Ctrl+Shift+B)
+
+That builds `QuickStartMenu` then `installer\QuickStartMenu.Installer` (Release-only), which runs `scripts\build-installer.ps1`.  
+**Debug / F5** does **not** build the installer (kept snappy).
+
+**Output:** `artifacts\installer\QuickStartMenu-Setup-<version>.exe`
+
+### From CLI
+
 ```powershell
 cd D:\Source\QuickStartMenu
+dotnet build QuickStartMenu.sln -c Release
+# or directly:
 .\scripts\build-installer.ps1
-# optional: .\scripts\build-installer.ps1 -Version 1.0.1
 ```
 
-**Output:** `artifacts\installer\QuickStartMenu-Setup-<version>.exe`  
-(e.g. `D:\Source\QuickStartMenu\artifacts\installer\QuickStartMenu-Setup-1.0.0.exe`)
-
-The installer adds a Start Menu shortcut; desktop shortcut is optional. Per-user install by default (`PrivilegesRequired=lowest`).
-
-Script / ISS: `scripts\build-installer.ps1`, `installer\QuickStartMenu.iss`
+Script / ISS / MSBuild: `scripts\build-installer.ps1`, `installer\QuickStartMenu.iss`, `installer\QuickStartMenu.Installer.proj`
 
 ## Smoke test
 

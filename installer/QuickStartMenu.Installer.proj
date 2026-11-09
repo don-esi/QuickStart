@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.Build.NoTargets/3.7.0">
+  <!--
+    VS / solution wrapper: Release builds run scripts\build-installer.ps1
+    (publish self-contained win-x64 + Inno ISCC → artifacts\installer\QuickStartMenu-Setup-*.exe).
+
+    Debug is a no-op so F5 on the app stays fast. Prefer building via the solution
+    with Configuration=Release (installer project is only marked Build for Release).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Ensure the app builds before the installer when both are in the solution. -->
+    <ProjectReference Include="..\QuickStartMenu.csproj"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      UndefineProperties="TargetFramework;RuntimeIdentifier;PublishSingleFile;SelfContained;PublishInstaller" />
+  </ItemGroup>
+
+  <Target Name="BuildInnoInstaller"
+          AfterTargets="Build"
+          Condition="'$(Configuration)' == 'Release' AND '$(SkipInstaller)' != 'true'">
+    <PropertyGroup>
+      <_Root>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))</_Root>
+      <_Script>$(_Root)\scripts\build-installer.ps1</_Script>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_Script)')" Text="Installer script not found: $(_Script)" />
+    <Message Importance="high" Text="QuickStartMenu.Installer: running $(_Script)" />
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(_Script)&quot; -Configuration Release"
+          WorkingDirectory="$(_Root)"
+          LogStandardErrorAsError="true"
+          ConsoleToMSBuild="true" />
+    <ItemGroup>
+      <_Setup Include="$(_Root)\artifacts\installer\QuickStartMenu-Setup-*.exe" />
+    </ItemGroup>
+    <Message Importance="high" Text="QuickStartMenu.Installer: produced @(_Setup->'%(FullPath)')" Condition="'@(_Setup)' != ''" />
+    <Warning Text="QuickStartMenu.Installer: Setup exe not found under artifacts\installer after build." Condition="'@(_Setup)' == ''" />
+  </Target>
+
+  <Target Name="SkipInstallerOnDebug"
+          AfterTargets="Build"
+          Condition="'$(Configuration)' != 'Release'">
+    <Message Importance="high"
+             Text="QuickStartMenu.Installer: skipped for Configuration=$(Configuration). Switch solution to Release and Build to produce artifacts\installer\QuickStartMenu-Setup-*.exe." />
+  </Target>
+</Project>
