@@ -44,6 +44,14 @@ public sealed class MenuController
         Save();
     }
 
+    public void MarkTrayGuidanceShown()
+    {
+        if (_config.TrayGuidanceShown)
+            return;
+        _config.TrayGuidanceShown = true;
+        Save();
+    }
+
     public void AddItem(MenuItemEntry item, string? folderId = null)
     {
         if (folderId is null)

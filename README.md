@@ -47,6 +47,15 @@ Or launch the built exe:
 
 Left-click the tray icon to open the flyout; right-click for Manage / Exit.
 
+## Tray icon visibility (Windows 10/11)
+
+Microsoft does **not** provide a supported API to force a notification icon into the always-visible tray. New icons go to the overflow (`^`) by default.
+
+On **Windows 11**, Quick Start Menu best-effort sets the undocumented `IsPromoted=1` value under `HKCU\Control Panel\NotifyIconSettings` when Explorer creates our entry (and never overrides an explicit user hide). First run also shows a balloon + short guidance and can open Taskbar settings.
+
+**Manual (any Windows 10/11):** Settings → Personalization → Taskbar → **Other system tray icons** → enable Quick Start Menu.  
+Tray menu / Manage → **Keep icon visible…** / **Tray icon settings…** opens the same Settings page.
+
 ## Installer (Inno Setup)
 
 Self-contained **win-x64** single-file publish + Inno Setup 6 setup exe. No separate .NET runtime install required. “Start with Windows” stays the in-app toggle (HKCU Run); uninstall clears that key if present.

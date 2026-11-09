@@ -14,6 +14,9 @@ public partial class App : System.Windows.Application
     private MenuController? _controller;
     private FlyoutWindow? _flyout;
     private ManageWindow? _manage;
+    private HashSet<string>? _trayBaseline;
+    private DispatcherTimer? _promoteTimer;
+    private int _promoteAttempts;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -35,9 +38,10 @@ public partial class App : System.Windows.Application
             args.SetObserved();
         };
 
-        AppLog.Info($"Startup begin. build=2026-11-09-dpi-fix Log={AppLog.LogFilePath}");
+        AppLog.Info($"Startup begin. build=2026-11-09-tray-promote Log={AppLog.LogFilePath}");
         AppLog.Info($"ProcessPath={Environment.ProcessPath}; BaseDir={AppContext.BaseDirectory}");
         AppLog.Info($"Args=[{string.Join(' ', e.Args)}]");
+        AppLog.Info($"OS build={Environment.OSVersion.Version.Build} Win11Promote={TrayIconPromoter.IsWindows11OrLater}");
 
         try
         {
@@ -47,26 +51,43 @@ public partial class App : System.Windows.Application
             AppLog.Info(
                 $"Config loaded: folders={_controller.Config.Folders.Count}, " +
                 $"rootItems={_controller.Config.RootItems.Count}, " +
-                $"startWithWindows={_controller.Config.StartWithWindows}");
+                $"startWithWindows={_controller.Config.StartWithWindows}, " +
+                $"trayGuidanceShown={_controller.Config.TrayGuidanceShown}");
+
+            var swept = TrayIconPromoter.SweepStaleEntries();
+            if (swept > 0)
+                AppLog.Info($"TrayIconPromoter swept {swept} stale NotifyIconSettings entr(y/ies)");
+
+            _trayBaseline = TrayIconPromoter.CaptureBaseline();
+            AppLog.Info($"Tray baseline subkeys={_trayBaseline?.Count.ToString() ?? "n/a"}");
 
             _trayIcon = IconService.CreateTrayIcon();
             _tray = new Forms.NotifyIcon
             {
                 Icon = _trayIcon,
-                Text = "Quick Start Menu",
+                Text = "Quick Start Menu — left-click to open",
                 Visible = true
             };
 
             // MouseClick (not MouseUp) for a clean single left-click; marshal to WPF dispatcher.
             _tray.MouseClick += TrayOnMouseClick;
+            _tray.BalloonTipClicked += (_, _) =>
+            {
+                AppLog.Info("Balloon tip clicked → taskbar settings");
+                TrayVisibilityGuidance.OpenTaskbarSettings();
+            };
             _tray.ContextMenuStrip = BuildTrayMenu();
             AppLog.Info("Tray icon created (MouseClick + ContextMenuStrip).");
+
+            ScheduleTrayPromotion();
 
             _flyout = new FlyoutWindow(_controller);
             AppLog.Info("FlyoutWindow constructed (hidden).");
 
             if (e.Args.Any(a => string.Equals(a, "--smoke-flyout", StringComparison.OrdinalIgnoreCase)))
                 ScheduleSmokeFlyout();
+            else
+                ScheduleFirstRunTrayGuidance();
         }
         catch (Exception ex)
         {
@@ -78,6 +99,79 @@ public partial class App : System.Windows.Application
                 Forms.MessageBoxIcon.Error);
             Shutdown(-1);
         }
+    }
+
+    private void ScheduleTrayPromotion()
+    {
+        if (!TrayIconPromoter.IsWindows11OrLater)
+        {
+            AppLog.Info("Tray promote skipped (not Windows 11+ / no NotifyIconSettings schema)");
+            return;
+        }
+
+        _promoteAttempts = 0;
+        _promoteTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(750) };
+        _promoteTimer.Tick += (_, _) =>
+        {
+            _promoteAttempts++;
+            var done = TrayIconPromoter.TryPromote(_trayBaseline);
+            AppLog.Info($"Tray promote attempt {_promoteAttempts}: identified={done}");
+            if (done || _promoteAttempts >= 12)
+            {
+                _promoteTimer.Stop();
+                _promoteTimer = null;
+            }
+        };
+        _promoteTimer.Start();
+    }
+
+    private void ScheduleFirstRunTrayGuidance()
+    {
+        if (_controller is null || _controller.Config.TrayGuidanceShown || _tray is null)
+            return;
+
+        // Let Explorer finish NIM_ADD / promote attempts before nudging the user.
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            ShowFirstRunTrayGuidance();
+        };
+        timer.Start();
+    }
+
+    private void ShowFirstRunTrayGuidance()
+    {
+        if (_controller is null || _tray is null)
+            return;
+        if (_controller.Config.TrayGuidanceShown)
+            return;
+
+        AppLog.Info("Showing first-run tray visibility guidance");
+        try
+        {
+            _tray.BalloonTipTitle = "Keep Quick Start Menu visible";
+            _tray.BalloonTipText =
+                "Windows may hide this icon in the overflow (^). " +
+                "Click here for Taskbar settings, or turn on Quick Start Menu under Other system tray icons.";
+            _tray.BalloonTipIcon = Forms.ToolTipIcon.Info;
+            _tray.ShowBalloonTip(12_000);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"ShowBalloonTip failed: {ex.Message}");
+        }
+
+        var result = Forms.MessageBox.Show(
+            TrayVisibilityGuidance.ManualSteps + "\n\nOpen Taskbar settings now?",
+            "Quick Start Menu — tray icon",
+            Forms.MessageBoxButtons.YesNo,
+            Forms.MessageBoxIcon.Information);
+
+        if (result == Forms.DialogResult.Yes)
+            TrayVisibilityGuidance.OpenTaskbarSettings();
+
+        _controller.MarkTrayGuidanceShown();
     }
 
     private void ScheduleSmokeFlyout()
@@ -136,6 +230,15 @@ public partial class App : System.Windows.Application
         {
             AppLog.Info("Tray context: Manage");
             Dispatcher.BeginInvoke(ShowManage, DispatcherPriority.Normal);
+        });
+        menu.Items.Add("Keep icon visible…", null, (_, _) =>
+        {
+            AppLog.Info("Tray context: Keep icon visible");
+            Dispatcher.BeginInvoke(() =>
+            {
+                TrayIconPromoter.TryPromote(_trayBaseline);
+                TrayVisibilityGuidance.OpenTaskbarSettings();
+            }, DispatcherPriority.Normal);
         });
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) =>
@@ -214,6 +317,9 @@ public partial class App : System.Windows.Application
     protected override void OnExit(ExitEventArgs e)
     {
         AppLog.Info($"OnExit code={e.ApplicationExitCode}");
+        _promoteTimer?.Stop();
+        _promoteTimer = null;
+
         if (_tray is not null)
         {
             _tray.Visible = false;

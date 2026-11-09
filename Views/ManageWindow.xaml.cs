@@ -265,6 +265,19 @@ public partial class ManageWindow : Window
             : $"Imported {added} pinned app(s).";
     }
 
+    private void TraySettings_Click(object sender, RoutedEventArgs e)
+    {
+        TrayIconPromoter.TryPromote(baseline: null);
+        TrayVisibilityGuidance.OpenTaskbarSettings();
+        StatusText.Text = "Opened Taskbar settings — enable Quick Start Menu under Other system tray icons.";
+        MessageBox.Show(
+            this,
+            TrayVisibilityGuidance.ManualSteps,
+            "Tray icon visibility",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
     private void Tree_DragOver(object sender, System.Windows.DragEventArgs e)
     {
         if (e.Data.GetDataPresent(DataFormats.FileDrop) || e.Data.GetDataPresent(typeof(NodeTag)))

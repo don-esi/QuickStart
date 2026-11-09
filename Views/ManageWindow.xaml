@@ -27,6 +27,11 @@
                           Margin="0,0,12,0"
                           Checked="StartupCheck_Changed"
                           Unchecked="StartupCheck_Changed"/>
+                <Button Content="Tray icon settings…"
+                        Style="{StaticResource FlatButton}"
+                        ToolTip="Windows may hide tray icons in the overflow. Open Taskbar settings to show Quick Start Menu."
+                        Margin="0,0,8,0"
+                        Click="TraySettings_Click"/>
                 <Button Content="Import pinned apps"
                         Style="{StaticResource FlatButton}"
                         Click="ImportPinned_Click"/>
