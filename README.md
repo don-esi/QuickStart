@@ -13,7 +13,8 @@ Repository: https://github.com/don-esi/QuickStart
 | SDK on machine | .NET 10 (`10.0.403`) |
 | Language | C# (`LangVersion=latest`; C# 13+ with .NET 10) |
 | App / tray icon | `Resources\app.ico` (multi-size 16–256; Win11 Start–style 2×2 grid) |
-| Release | [v1.1.0](https://github.com/don-esi/QuickStart/releases/tag/v1.1.0) (`QuickStart-Setup-1.1.0.exe`) |
+| Version | `1.0.0` |
+| Release | [v1.0.0](https://github.com/don-esi/QuickStart/releases/tag/v1.0.0) (`QuickStart-Setup-1.0.0.exe`) |
 
 ## Features
 
@@ -105,7 +106,3 @@ Import reads `.lnk` files under:
 `%AppData%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar`
 
 That covers classic taskbar pins. Some Win11 pin metadata is not exposed via a stable public API; those may not appear until Microsoft documents a supported surface.
-
-## Rename note (v1.1.0)
-
-Formerly **QuickStartMenu**. AppData migrates from `%AppData%\QuickStartMenu` to `%AppData%\QuickStart` on first run. Uninstall the old *QuickStartMenu* setup and refresh any pinned shortcuts if both are installed.

@@ -47,7 +47,6 @@ public partial class App : System.Windows.Application
         {
             var store = new ConfigStore();
             AppLog.Info($"Config path={store.ConfigPath}");
-            StartupService.MigrateLegacyRunValue();
             _controller = new MenuController(store);
             AppLog.Info(
                 $"Config loaded: folders={_controller.Config.Folders.Count}, " +

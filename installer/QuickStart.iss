@@ -4,7 +4,7 @@
 ; Uninstall removes the app's optional Run key so leftovers don't relaunch a missing exe.
 
 #ifndef AppVersion
-  #define AppVersion "1.1.0"
+  #define AppVersion "1.0.0"
 #endif
 
 #ifndef PublishDir
@@ -81,6 +81,5 @@ begin
   begin
     // Clean the in-app "Start with Windows" registration if present (HKCU only).
     RegDeleteValue(HKCU, RunKey, RunValue);
-    RegDeleteValue(HKCU, RunKey, 'QuickStartMenu'); // legacy name
   end;
 end;
