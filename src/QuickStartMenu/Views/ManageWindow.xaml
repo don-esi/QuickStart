@@ -1,0 +1,126 @@
+<Window x:Class="QuickStartMenu.Views.ManageWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Manage Quick Start Menu"
+        Height="560"
+        Width="760"
+        MinHeight="420"
+        MinWidth="640"
+        Background="{StaticResource BgBrush}"
+        FontFamily="{StaticResource UiFont}">
+    <DockPanel Margin="16">
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="Manage"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextBrush}"/>
+                <TextBlock Text="Drag files or shortcuts here. Reorder and regroup items in the list."
+                           Foreground="{StaticResource MutedBrush}"
+                           FontSize="12"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <CheckBox x:Name="StartupCheck"
+                          Content="Start with Windows"
+                          VerticalAlignment="Center"
+                          Margin="0,0,12,0"
+                          Checked="StartupCheck_Changed"
+                          Unchecked="StartupCheck_Changed"/>
+                <Button Content="Import pinned apps"
+                        Style="{StaticResource FlatButton}"
+                        Click="ImportPinned_Click"/>
+            </StackPanel>
+        </DockPanel>
+
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <TextBlock x:Name="StatusText"
+                       Foreground="{StaticResource MutedBrush}"
+                       FontSize="11"
+                       VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Add folder"
+                        Style="{StaticResource FlatButton}"
+                        Margin="0,0,8,0"
+                        Click="AddFolder_Click"/>
+                <Button Content="Add file…"
+                        Style="{StaticResource FlatButton}"
+                        Margin="0,0,8,0"
+                        Click="AddFile_Click"/>
+                <Button Content="Remove"
+                        Style="{StaticResource FlatButton}"
+                        Margin="0,0,8,0"
+                        Click="Remove_Click"/>
+                <Button Content="Save"
+                        Style="{StaticResource PrimaryButton}"
+                        Click="Save_Click"/>
+            </StackPanel>
+        </DockPanel>
+
+        <Grid AllowDrop="True"
+              Drop="Tree_Drop"
+              DragOver="Tree_DragOver">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="4">
+                <TreeView x:Name="MenuTree"
+                          BorderThickness="0"
+                          Background="Transparent"
+                          AllowDrop="True"
+                          SelectedItemChanged="MenuTree_SelectedItemChanged"
+                          PreviewMouseLeftButtonDown="MenuTree_PreviewMouseLeftButtonDown"
+                          PreviewMouseMove="MenuTree_PreviewMouseMove"
+                          Drop="Tree_Drop"
+                          DragOver="Tree_DragOver"
+                          GiveFeedback="MenuTree_GiveFeedback"/>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="14">
+                <StackPanel>
+                    <TextBlock Text="Details"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,12"/>
+                    <TextBlock Text="Name" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+                    <TextBox x:Name="NameBox"
+                             Margin="0,4,0,12"
+                             Padding="6,4"
+                             IsEnabled="False"
+                             LostFocus="Detail_Changed"/>
+                    <TextBlock Text="Path" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+                    <TextBox x:Name="PathBox"
+                             Margin="0,4,0,12"
+                             Padding="6,4"
+                             IsEnabled="False"
+                             LostFocus="Detail_Changed"
+                             TextWrapping="Wrap"/>
+                    <TextBlock Text="Arguments" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+                    <TextBox x:Name="ArgsBox"
+                             Margin="0,4,0,12"
+                             Padding="6,4"
+                             IsEnabled="False"
+                             LostFocus="Detail_Changed"/>
+                    <TextBlock Text="Working directory" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+                    <TextBox x:Name="WorkDirBox"
+                             Margin="0,4,0,0"
+                             Padding="6,4"
+                             IsEnabled="False"
+                             LostFocus="Detail_Changed"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

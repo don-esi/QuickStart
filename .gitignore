@@ -1,0 +1,14 @@
+## Build
+**/bin/
+**/obj/
+**/out/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.DotSettings.user
+
+## OS
+Thumbs.db
+Desktop.ini
