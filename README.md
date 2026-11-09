@@ -44,7 +44,7 @@ Or launch the built exe:
 ## Config / debug log
 
 - Menu: `%AppData%\QuickStartMenu\menu.json`
-- Debug log: `%AppData%\QuickStartMenu\debug.log` (rolls at ~2 MB → `.1` / `.2`)
+- Debug log: `%AppData%\QuickStartMenu\debug.log` (rolls at ~2 MB → `.1` / `.2`; Release = exceptions only)
 
 Left-click the tray icon to open the flyout; right-click for Manage / Exit.
 

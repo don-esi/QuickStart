@@ -5,8 +5,9 @@ using System.Text;
 namespace QuickStartMenu.Services;
 
 /// <summary>
-/// Durable debug log at %AppData%\QuickStartMenu\debug.log (also Debug.WriteLine).
-/// Size-rotated: rolls to debug.log.1 / .2 when over ~2 MB so history stays bounded.
+/// Durable log at %AppData%\QuickStartMenu\debug.log (also Debug.WriteLine).
+/// Debug: verbose Info/Warn/Error. Release: exceptions with stack traces only.
+/// Size-rotated: rolls to debug.log.1 / .2 when over ~2 MB.
 /// </summary>
 public static class AppLog
 {
@@ -21,16 +22,25 @@ public static class AppLog
 
     public static string LogFilePath => LogPath;
 
+    [Conditional("DEBUG")]
     public static void Info(string message) => Write("INFO", message);
 
+    [Conditional("DEBUG")]
     public static void Warn(string message) => Write("WARN", message);
 
     public static void Error(string message, Exception? ex = null)
     {
+#if !DEBUG
+        // Release: exceptions (with stack) only — skip message-only errors.
+        if (ex is null)
+            return;
+        Write("ERROR", $"{message} | {ex}");
+#else
         if (ex is null)
             Write("ERROR", message);
         else
-            Write("ERROR", $"{message} | {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+            Write("ERROR", $"{message} | {ex}");
+#endif
     }
 
     private static void Write(string level, string message)
