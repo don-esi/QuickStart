@@ -12,16 +12,18 @@ Repository: https://github.com/don-esi/QuickStartMenu
 | TFM | `net10.0-windows` |
 | SDK on machine | .NET 10 (`10.0.403`) |
 | Language | C# (`LangVersion=latest`; C# 13+ with .NET 10) |
-| App / tray icon | `Resources\app.ico` (multi-size 16–256; light menu-card glyph) |
+| App / tray icon | `Resources\app.ico` (multi-size 16–256; Win11 Start–style 2×2 grid) |
+| Release | [v1.0.0](https://github.com/don-esi/QuickStartMenu/releases/tag/v1.0.0) (`QuickStartMenu-Setup-1.0.0.exe`) |
 
 ## Features
 
 - System tray icon → flyout menu to launch configured items
 - Launch `.exe`, `.cmd` / `.bat`, `.ps1`, `.lnk`, and other shell-openable paths
-- Folder grouping
+- Folder grouping (folders start collapsed)
 - Management window: drag/drop files from Explorer, reorder/regroup in the tree
 - Start with Windows (HKCU Run key)
 - Import taskbar-pinned apps from the classic `User Pinned\TaskBar` shortcuts folder
+- Win11 tray `IsPromoted` best-effort; rotating debug log (Release = exceptions only)
 
 ## Open in Visual Studio 2026
 
