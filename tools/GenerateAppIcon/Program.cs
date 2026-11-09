@@ -119,9 +119,17 @@ static void SaveIco(IReadOnlyList<Bitmap> images, string path)
         bw.Write(png);
 }
 
-var root = args.Length > 0 ? args[0] : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-var assets = Path.Combine(root, "assets");
-var resources = Path.Combine(root, "Resources");
+var rootArg = args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal))
+    ?? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+
+if (args.Any(a => string.Equals(a, "--options", StringComparison.OrdinalIgnoreCase)))
+{
+    GenerateAppIcon.PreviewOptions.Run(rootArg);
+    return;
+}
+
+var assets = Path.Combine(rootArg, "assets");
+var resources = Path.Combine(rootArg, "Resources");
 Directory.CreateDirectory(assets);
 Directory.CreateDirectory(resources);
 
