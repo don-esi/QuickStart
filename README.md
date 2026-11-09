@@ -29,13 +29,13 @@ Minimalist Windows start-menu alternative (PSMenu-like) built with **WPF** for *
 ```powershell
 cd D:\Source\QuickStartMenu
 dotnet build QuickStartMenu.sln -c Release
-dotnet run --project src\QuickStartMenu\QuickStartMenu.csproj -c Release
+dotnet run --project QuickStartMenu.csproj -c Release
 ```
 
 Or launch the built exe:
 
 ```powershell
-.\src\QuickStartMenu\bin\Release\net10.0-windows\QuickStartMenu.exe
+.\bin\Release\net10.0-windows\QuickStartMenu.exe
 ```
 
 ## Config
