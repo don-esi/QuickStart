@@ -2,93 +2,56 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
-static Bitmap DrawRocketYellow(int size)
+/// <summary>
+/// Windows 11 Start logo: 2×2 Fluent blue tiles, diagonal light→dark gradient,
+/// thin gutters, subtle rounded corners. Transparent backdrop (no plate).
+/// </summary>
+static Bitmap DrawStartGrid(int size)
 {
-    // Windows accent gold (#FFB900) on near-black plate — readable on dark trays.
-    var winGold = Color.FromArgb(255, 255, 185, 0);
-    var winGoldDeep = Color.FromArgb(255, 230, 160, 0);
-    var plate = Color.FromArgb(255, 32, 32, 32);
-    var plateEdge = Color.FromArgb(255, 64, 64, 64);
+    // Sampled / Fluent Win11 Start blues (light cyan-blue → Microsoft blue).
+    var light = Color.FromArgb(255, 0x3C, 0xBE, 0xF5); // ~#3CBEF5
+    var dark = Color.FromArgb(255, 0x00, 0x78, 0xD4);  // ~#0078D4
 
     var bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb);
     using var g = Graphics.FromImage(bmp);
     g.Clear(Color.Transparent);
-    if (size >= 32)
+    g.SmoothingMode = size >= 32 ? SmoothingMode.AntiAlias : SmoothingMode.None;
+    g.PixelOffsetMode = size >= 32 ? PixelOffsetMode.HighQuality : PixelOffsetMode.None;
+
+    // Fill most of the canvas; thin gutters (~4% like the reference, min 1–2px).
+    int pad = size <= 16 ? 1 : Math.Max(1, (int)Math.Round(size * 0.04f));
+    int gap = size <= 16 ? 1 : (size <= 32 ? 2 : Math.Max(2, (int)Math.Round(size * 0.045f)));
+    int inner = size - 2 * pad;
+    int tile = (inner - gap) / 2;
+    if (tile < 1) tile = 1;
+    int used = 2 * tile + gap;
+    int x0 = pad + Math.Max(0, (inner - used) / 2);
+    int y0 = pad + Math.Max(0, (inner - used) / 2);
+    // Subtle Fluent rounding — nearly square at 16px, soft at larger sizes.
+    float tileRadius = size <= 16 ? 1f : Math.Max(1f, tile * 0.14f);
+
+    // One diagonal gradient across the whole 2×2 so tiles read as one Fluent window.
+    var gradBounds = new RectangleF(x0, y0, used, used);
+    using var gradient = new LinearGradientBrush(
+        gradBounds,
+        light,
+        dark,
+        LinearGradientMode.ForwardDiagonal)
     {
-        g.SmoothingMode = SmoothingMode.AntiAlias;
-        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+        WrapMode = WrapMode.TileFlipXY,
+    };
+
+    for (var row = 0; row < 2; row++)
+    for (var col = 0; col < 2; col++)
+    {
+        var rect = new RectangleF(
+            x0 + col * (tile + gap),
+            y0 + row * (tile + gap),
+            tile,
+            tile);
+        using var tilePath = RoundedRect(rect, tileRadius);
+        g.FillPath(gradient, tilePath);
     }
-    else
-    {
-        g.SmoothingMode = SmoothingMode.None;
-        g.PixelOffsetMode = PixelOffsetMode.None;
-    }
-
-    float pad = Math.Max(1f, size * 0.06f);
-    var bounds = new RectangleF(pad, pad, size - 2 * pad, size - 2 * pad);
-    float radius = Math.Max(1f, size * 0.18f);
-
-    using (var path = RoundedRect(bounds, radius))
-    using (var fill = new SolidBrush(plate))
-    using (var edge = new Pen(plateEdge, Math.Max(1f, size / 32f)))
-    {
-        g.FillPath(fill, path);
-        if (size >= 20)
-            g.DrawPath(edge, path);
-    }
-
-    using var gold = new SolidBrush(winGold);
-    using var goldDeep = new SolidBrush(winGoldDeep);
-
-    float cx = bounds.X + bounds.Width / 2f;
-    float top = bounds.Y + bounds.Height * 0.12f;
-    float midY = bounds.Y + bounds.Height * 0.42f;
-    float bottom = bounds.Y + bounds.Height * 0.68f;
-    float bodyW = Math.Max(2f, bounds.Width * 0.30f);
-
-    // Body + nose
-    using (var body = new GraphicsPath())
-    {
-        body.AddPolygon(new[]
-        {
-            new PointF(cx, top),
-            new PointF(cx + bodyW / 2f, midY),
-            new PointF(cx + bodyW / 2f, bottom),
-            new PointF(cx - bodyW / 2f, bottom),
-            new PointF(cx - bodyW / 2f, midY),
-        });
-        g.FillPath(gold, body);
-    }
-
-    // Fins
-    float fin = bounds.Width * 0.16f;
-    g.FillPolygon(gold, new[]
-    {
-        new PointF(cx - bodyW / 2f, bottom - bounds.Height * 0.08f),
-        new PointF(cx - bodyW / 2f - fin, bottom + bounds.Height * 0.05f),
-        new PointF(cx - bodyW / 2f, bottom),
-    });
-    g.FillPolygon(gold, new[]
-    {
-        new PointF(cx + bodyW / 2f, bottom - bounds.Height * 0.08f),
-        new PointF(cx + bodyW / 2f + fin, bottom + bounds.Height * 0.05f),
-        new PointF(cx + bodyW / 2f, bottom),
-    });
-
-    // Flame (deeper gold)
-    float flameTop = bottom + bounds.Height * 0.02f;
-    float flameBot = bounds.Bottom - bounds.Height * 0.08f;
-    g.FillPolygon(goldDeep, new[]
-    {
-        new PointF(cx, flameBot),
-        new PointF(cx - bodyW * 0.38f, flameTop),
-        new PointF(cx + bodyW * 0.38f, flameTop),
-    });
-
-    // Porthole (plate-colored cutout)
-    float winR = Math.Max(1f, bounds.Width * 0.07f);
-    using var hole = new SolidBrush(plate);
-    g.FillEllipse(hole, cx - winR, top + bounds.Height * 0.20f - winR, winR * 2f, winR * 2f);
 
     return bmp;
 }
@@ -162,8 +125,29 @@ Directory.CreateDirectory(assets);
 Directory.CreateDirectory(resources);
 Directory.CreateDirectory(media);
 
+// Preview-only: Start grid for Don's approval — does NOT touch Resources\app.ico.
+if (args.Any(a => string.Equals(a, "--preview-startgrid", StringComparison.OrdinalIgnoreCase)))
+{
+    var optDir = Path.Combine(assets, "options");
+    Directory.CreateDirectory(optDir);
+    foreach (var size in new[] { 16, 32, 256 })
+    {
+        using var bmp = DrawStartGrid(size);
+        var name = $"qsm-opt-startgrid-{size}.png";
+        var assetPath = Path.Combine(optDir, name);
+        bmp.Save(assetPath, ImageFormat.Png);
+        var mediaPath = Path.Combine(media, name);
+        File.Copy(assetPath, mediaPath, overwrite: true);
+        Console.WriteLine($"Wrote {mediaPath}");
+    }
+
+    Console.WriteLine("Preview only — Resources\\app.ico unchanged.");
+    return;
+}
+
+// Shipped icon (Don-approved): Win11 Start 4-tile Fluent grid.
 int[] sizes = [16, 20, 24, 32, 48, 256];
-var bitmaps = sizes.Select(DrawRocketYellow).ToList();
+var bitmaps = sizes.Select(DrawStartGrid).ToList();
 try
 {
     for (var i = 0; i < sizes.Length; i++)
@@ -173,13 +157,13 @@ try
         Console.WriteLine($"Wrote {png}");
     }
 
-    // Don-facing yellow rocket previews
-    foreach (var size in new[] { 32, 256 })
+    var optDir = Path.Combine(assets, "options");
+    Directory.CreateDirectory(optDir);
+    foreach (var size in new[] { 16, 32, 256 })
     {
         var idx = Array.IndexOf(sizes, size);
-        var name = $"qsm-opt-rocket-yellow-{size}.png";
-        var assetOpt = Path.Combine(assets, "options", name);
-        Directory.CreateDirectory(Path.GetDirectoryName(assetOpt)!);
+        var name = $"qsm-opt-startgrid-{size}.png";
+        var assetOpt = Path.Combine(optDir, name);
         bitmaps[idx].Save(assetOpt, ImageFormat.Png);
         var mediaPath = Path.Combine(media, name);
         File.Copy(assetOpt, mediaPath, overwrite: true);
