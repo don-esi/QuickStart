@@ -6,103 +6,41 @@ Repository: https://github.com/don-esi/QuickStart
 
 > Built with [Cursor](https://cursor.com) / Grok.
 
-| | |
-|---|---|
-| Solution | `QuickStart.sln` (VS Version 18) |
-| TFM | `net10.0-windows` |
-| SDK on machine | .NET 10 (`10.0.403`) |
-| Language | C# (`LangVersion=latest`; C# 13+ with .NET 10) |
-| App / tray icon | `Resources\app.ico` (multi-size 16–256; Win11 Start–style 2×2 grid) |
-| Version | `1.0.0` |
-| Release | [v1.0.0](https://github.com/don-esi/QuickStart/releases/tag/v1.0.0) (`QuickStart-Setup-1.0.0.exe`) |
+## Overview
+
+Designed to reduce Windows taskbar clutter from massive workflows by moving secondary apps to a clean tray flyout.
+
+Prebuilt installer (optional): [v1.0.0 Setup](https://github.com/don-esi/QuickStart/releases/tag/v1.0.0).
 
 ## Features
 
-- System tray icon → flyout menu to launch configured items
-- Launch `.exe`, `.cmd` / `.bat`, `.ps1`, `.lnk`, and other shell-openable paths
-- Folder grouping (folders start collapsed)
-- Management window: drag/drop files from Explorer, reorder/regroup in the tree
-- Start with Windows (HKCU Run key)
-- Import taskbar-pinned apps from the classic `User Pinned\TaskBar` shortcuts folder
-- Win11 tray `IsPromoted` best-effort; rotating debug log (Release = exceptions only)
+* **Tray Menu:** Left-click the tray icon to launch tools; right-click for Manage / Exit.
+* **Launches Anything:** Supports `.exe`, `.cmd`/`.bat`, `.ps1`, shortcuts (`.lnk`), and other shell-openable paths.
+* **Tree Manager:** Drag and drop files from File Explorer into organized folders (folders start collapsed).
+* **Taskbar Import:** Imports classic pins from `User Pinned\TaskBar`.
+* **Start with Windows:** Optional HKCU Run toggle in Manage.
+* **Win11 Tray Fix:** Best-effort `IsPromoted=1` so the icon is more likely to stay visible.
 
-## Open in Visual Studio 2026
+## Tech Stack
 
-1. Open `D:\Source\QuickStart\QuickStart.sln` in **Visual Studio Community 2026**
-2. Set **QuickStart** as the startup project (if needed)
-3. Press **F5**
+* **Framework / Language:** WPF on **.NET 10** (`net10.0-windows`) with **C#** (`LangVersion=latest`).
+* **IDE Target:** Visual Studio 2026 (solution format Version 18).
+* **Installer:** Inno Setup 6 (self-contained win-x64 single-file) — required only if you want a local Setup build.
 
-## Run from CLI
+## Build and Run
 
-```powershell
-cd D:\Source\QuickStart
-dotnet build QuickStart.sln -c Release
-dotnet run --project QuickStart.csproj -c Release
-```
+1. Open **`QuickStart.sln`** in **Visual Studio 2026** and set **QuickStart** as the startup project.
+2. Press **F5** (Debug) to run from the tray.
+3. To produce the installer: switch the solution to **Release**, then **Build → Build Solution**.  
+   Output: `artifacts\installer\QuickStart-Setup-1.0.0.exe`  
+   (*Debug / F5 does not build the installer. Inno Setup 6 must be installed for Release installer builds.*)
 
-Or launch the built exe:
+## Optional: smoke test
 
-```powershell
-.\bin\Release\net10.0-windows\QuickStart.exe
-```
+In Visual Studio: **Project → Properties → Debug → Application arguments** → `--smoke-flyout`, then **F5**.  
+Expect exit code `0` and a `PASS` line in `%AppData%\QuickStart\debug.log`.
 
-## Config / debug log
+## Config
 
-- Menu: `%AppData%\QuickStart\menu.json`
-- Debug log: `%AppData%\QuickStart\debug.log` (rolls at ~2 MB → `.1` / `.2`; Release = exceptions only)
-
-Left-click the tray icon to open the flyout; right-click for Manage / Exit.
-
-## Tray icon visibility (Windows 10/11)
-
-Microsoft does **not** provide a supported API to force a notification icon into the always-visible tray. New icons go to the overflow (`^`) by default.
-
-On **Windows 11**, QuickStart best-effort sets the undocumented `IsPromoted=1` value under `HKCU\Control Panel\NotifyIconSettings` when Explorer creates our entry (and never overrides an explicit user hide). We do **not** show our own first-run pin balloon/dialog — Windows already prompts.
-
-**Manual (any Windows 10/11):** Settings → Personalization → Taskbar → **Other system tray icons** → enable QuickStart.  
-Tray menu / Manage → **Keep icon visible…** / **Tray icon settings…** opens the same Settings page.
-
-## Installer (Inno Setup)
-
-Self-contained **win-x64** single-file publish + Inno Setup 6 setup exe. No separate .NET runtime install required. “Start with Windows” stays the in-app toggle (HKCU Run); uninstall clears that key if present.
-
-**Prerequisite:** [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`)
-
-### From Visual Studio 2026
-
-1. Open `QuickStart.sln`
-2. Set solution configuration to **Release**
-3. **Build → Build Solution** (Ctrl+Shift+B)
-
-That builds `QuickStart` then `installer\QuickStart.Installer` (Release-only), which runs `scripts\build-installer.ps1`.  
-**Debug / F5** does **not** build the installer (kept snappy).
-
-**Output:** `artifacts\installer\QuickStart-Setup-<version>.exe`
-
-### From CLI
-
-```powershell
-cd D:\Source\QuickStart
-dotnet build QuickStart.sln -c Release
-# or directly:
-.\scripts\build-installer.ps1
-```
-
-Script / ISS / MSBuild: `scripts\build-installer.ps1`, `installer\QuickStart.iss`, `installer\QuickStart.Installer.proj`
-
-## Smoke test
-
-```powershell
-dotnet run --project QuickStart.csproj -c Release -- --smoke-flyout
-```
-
-Expect exit code `0` and `Smoke: ... result=PASS` / `onScreen=True` in `%AppData%\QuickStart\debug.log`.
-Startup stamp should be `build=2026-11-09-dpi-fix`.
-
-## Pinned-apps note
-
-Import reads `.lnk` files under:
-
-`%AppData%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar`
-
-That covers classic taskbar pins. Some Win11 pin metadata is not exposed via a stable public API; those may not appear until Microsoft documents a supported surface.
+* Menu: `%AppData%\QuickStart\menu.json`
+* Debug log: `%AppData%\QuickStart\debug.log` (rotates; Release logs exceptions only)
