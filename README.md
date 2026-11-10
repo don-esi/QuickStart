@@ -1,10 +1,10 @@
 # QuickStart
 
+**Built with [Cursor](https://cursor.com) / Grok.**
+
 Minimalist Windows start-menu alternative (PSMenu-like) built with **WPF** for **Visual Studio 2026**.
 
 Repository: https://github.com/don-esi/QuickStart
-
-> Built with [Cursor](https://cursor.com) / Grok.
 
 ## Overview
 
